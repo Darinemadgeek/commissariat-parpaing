@@ -4,7 +4,7 @@ window.PD = (function () {
     DAY_LEN: 15,            // secondes par jour de jeu
     PATROL_TIME: 8,         // s par interpellation et par patrouille
     ENQ_TIME: 12,           // s d'audition par GAV
-    PTS_TIME: 7,            // s de signalisation par GAV
+    PTS_TIME: 14,           // s de signalisation par GAV (plus long qu'une audition : il faut plus de PTS que d'enquêteurs)
     CITIZEN_TIME: 5,        // s entre deux usagers à l'accueil
     ACC_TIME: 4,            // s pour enregistrer un usager
     PLA_TIME: 10,           // s pour traiter une plainte
@@ -15,7 +15,7 @@ window.PD = (function () {
     HALL: 4,
     PRIME_BASE: 0.25,
     OBJ_START: 8,
-    STARS_TO_MOVE: 10,      // étoiles à gagner dans un commissariat pour être muté
+    STARS_TO_MOVE: 100,     // étoiles à gagner dans un commissariat pour être muté (3 max par semaine)
     // problèmes des commissariats suivants
     DRUNK: 0.3,             // part des GAV ivres (vomi)
     VOMIT_EVERY: 14,        // s entre deux vomis par GAV ivre

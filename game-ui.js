@@ -36,7 +36,7 @@
       <div class="stamp-row"><span class="stamp ${ok ? 'ok' : ''}">${ok ? 'PRIME ACCORDÉE' : 'PRIME REFUSÉE'}</span></div>
       <dl>
         <dt>${star(p.st[0])} Dossiers traités</dt><dd>${fmt(p.dossiers)} / ${fmt(p.objective)}</dd>
-        <dt>${star(p.st[1])} Signalisation PTS ≥ 95 %</dt><dd>${pct(p.r)}</dd>
+        <dt>${star(p.st[1])} Signalisation PTS ≥ 95 %</dt><dd>${pct(p.r)} (${fmt(p.sig)}/${fmt(p.gav)})</dd>
         <dt>${star(p.st[2])} ${p.crit3}</dt><dd>${crit3Val(p)}</dd>
         <dt class="opt">dont GAV / plaintes</dt><dd class="opt">${fmt(p.gav)} / ${fmt(p.pla)}</dd>
         <dt class="opt">Recettes de la semaine</dt><dd class="opt">${eur(p.earned)}</dd>
@@ -148,7 +148,7 @@
       }, true);
       const h = GM.here();
       if (h.problems.length) addEl('p', 'mini', '<b>Problèmes de ce commissariat.</b><br>' + h.problems.map(k => `<b>${PROBLEMS[k].name} :</b> ${PROBLEMS[k].desc}`).join('<br>'));
-      addEl('p', 'mini', `<b>Étoiles de la semaine.</b> 1 étoile si l'objectif de dossiers (GAV + plaintes) est atteint, 1 si la signalisation PTS atteint 95 %, 1 pour le critère local : ${h.star3.label.toLowerCase()}. À ${T.STARS_TO_MOVE} étoiles, vous pouvez demander votre mutation sur la carte.<br><br><b>Prime.</b> Versée uniquement si la jauge d'objectif est pleine : 50 % des recettes de la semaine, réduite si la PTS ne suit pas (rien sous 70 %) ou si des usagers repartent fâchés, +25 % par étoile. Objectif manqué : il baisse un peu la semaine suivante.<br><br><b>Astuces.</b> Les plaintes donnent des pistes : avec des pistes, les patrouilles vont deux fois plus vite. Un clic sur le commissaire ou sur le tampon accélère la GAV la plus ancienne. Attrapez les croissants dorés.`);
+      addEl('p', 'mini', `<b>Étoiles de la semaine.</b> 1 étoile si l'objectif de dossiers (GAV + plaintes) est atteint, 1 si la signalisation PTS atteint 95 %, 1 pour le critère local : ${h.star3.label.toLowerCase()}. À ${T.STARS_TO_MOVE} étoiles, vous pouvez demander votre mutation sur la carte.<br><br><b>Taux de signalisation.</b> GAV terminées cette semaine avec leur signalisation PTS complète, divisées par toutes les GAV terminées cette semaine. Une personne qui sort avant la fin de sa signalisation compte comme non signalisée. Une signalisation (14 s) est plus longue qu'une audition (12 s) : il faut plus d'agents PTS que d'enquêteurs, ou la borne biométrique.<br><br><b>Prime.</b> Versée uniquement si la jauge d'objectif est pleine : 50 % des recettes de la semaine, réduite si la PTS ne suit pas (rien sous 70 %) ou si des usagers repartent fâchés, +25 % par étoile. Objectif manqué : il baisse un peu la semaine suivante.<br><br><b>Astuces.</b> Les plaintes donnent des pistes : avec des pistes, les patrouilles vont deux fois plus vite. Un clic sur le commissaire ou sur le tampon accélère la GAV la plus ancienne. Attrapez les croissants dorés.`);
     }
     list.scrollTop = scroll;
   }
@@ -161,7 +161,10 @@
     if (id === 'patrols') return `${fmt((60 * G.n.patrols / T.PATROL_TIME) * (1 + 0.25 * G.up.gyro), 1)} / min interpellations${G.pistes ? ' (×2 avec pistes : ' + G.pistes + ')' : ''}`;
     if (id === 'cells') return `${G.det.length} / ${GM.capacity()} places occupées · ${G.hall} en attente`;
     if (id === 'inv') return `${G._invBusy || 0} / ${G.n.inv} en audition · ${eur(GM.gavValue(), 1)} par GAV`;
-    if (id === 'pts') return `${G._ptsBusy || 0} / ${G.n.pts} au travail${G.ptsDown.length ? ' · ' + G.ptsDown.length + ' en malaise' : ''} · signalisation ${pct(GM.sigRate(W))}`;
+    if (id === 'pts') {
+      const pm = GM.ptsPerMin(), im = GM.invPerMin();
+      return `Signalise ${fmt(pm, 1)} GAV/min · les enquêteurs en bouclent ${fmt(im, 1)}/min${pm < im * 0.95 ? ' → pas assez de PTS' : ' → ça suit'}${G.ptsDown.length ? ' · ' + G.ptsDown.length + ' en malaise' : ''}`;
+    }
     if (id === 'acc') return `${G.cit} usager${G.cit > 1 ? 's' : ''} dans la file · ${W.partis} repartis fâchés`;
     if (id === 'pla') return `${G.plaQ} plainte${G.plaQ > 1 ? 's' : ''} en attente · ${eur(GM.plaValue(), 1)} par plainte`;
     if (id === 'clean') return `${G.vomit} flaque${G.vomit > 1 ? 's' : ''} · propreté ${pct(GM.propre())}`;
@@ -270,15 +273,13 @@
   const cls = (el, v, good, warn) => { el.className = v === null ? '' : v >= good ? 'ok' : v >= warn ? 'warn' : 'bad'; };
   function hud() {
     const W = G.week, h = GM.here();
-    $('money').textContent = eur(G.money);
-    $('rate').textContent = eur(GM.rate(), 1);
     $('tamponVal').textContent = '+' + eur(GM.tamponValue(), 1);
     $('weekNo').textContent = 'Semaine ' + W.no;
     $('dayName').textContent = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'][Math.min(6, Math.floor(W.t / T.DAY_LEN))];
     $('weekBar').style.width = (W.t / (T.DAY_LEN * 7)) * 100 + '%';
     const dos = W.gav + W.pla, r = GM.sigRate(W), s = GM.satRate(W);
     $('sDos').textContent = fmt(dos);
-    const sig = $('sSig'); sig.textContent = pct(r); cls(sig, r, 0.95, 0.7);
+    const sig = $('sSig'); sig.textContent = r === null ? '–' : `${pct(r)} (${W.sig}/${W.gav})`; cls(sig, r, 0.95, 0.7);
     $('sGav').textContent = fmt(W.gav); $('sPla').textContent = fmt(W.pla);
     const sat = $('sSat'); sat.textContent = pct(s); cls(sat, s, 0.9, 0.6);
     const lost = $('sLost'); lost.textContent = fmt(W.lost); lost.className = W.lost ? 'bad' : '';
@@ -347,6 +348,25 @@
     };
   }
 
+  // ---------- caisse qui défile ----------
+  // L'affichage rattrape la vraie somme en douceur ; une dépense se voit tout de suite.
+  const SUF = ['', 'k', 'M', 'Md', 'T', 'Qa', 'Qi', 'Sx', 'Sp', 'Oc', 'No', 'Dc'];
+  function moneyFmt(n) {
+    if (n < 1e7) return Math.floor(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ' €';
+    const e = Math.floor(Math.log10(n) / 3);
+    if (e >= SUF.length) return n.toExponential(3).replace('.', ',') + ' €';
+    return (n / Math.pow(1000, e)).toFixed(3).replace('.', ',') + ' ' + SUF[e] + ' €';
+  }
+  let dispMoney = null, dispRate = 0, lastMoneyTxt = '', lastRateTxt = '';
+  function tickMoney(dt) {
+    if (dispMoney === null || G.money < dispMoney) dispMoney = G.money;
+    else { dispMoney += (G.money - dispMoney) * Math.min(1, dt * 3); if (G.money - dispMoney < 0.5) dispMoney = G.money; }
+    dispRate += (GM.rate() - dispRate) * Math.min(1, dt * 2);
+    const m = moneyFmt(dispMoney), r = eur(dispRate, 1);
+    if (m !== lastMoneyTxt) { lastMoneyTxt = m; $('money').textContent = m; }
+    if (r !== lastRateTxt) { lastRateTxt = r; $('rate').textContent = r; }
+  }
+
   // ---------- boucle ----------
   let last = performance.now(), uiT = 0, saveT = 0, radioT = 0;
   const fxQ = [];
@@ -371,6 +391,7 @@
     }
     if (pvAuto > 0 && (pvAuto -= Math.min(dt, 1)) <= 0) collect();
     S.sync(view());
+    tickMoney(Math.min(dt, 0.1));
     if ((uiT += Math.min(dt, 1)) > 0.2) { uiT = 0; hud(); render(); }
     if ((saveT += Math.min(dt, 1)) > 5) { saveT = 0; GM.save(); }
     if ((radioT += Math.min(dt, 1)) > 22) { radioT = 0; radio(); }

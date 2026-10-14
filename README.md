@@ -16,7 +16,7 @@ Vous êtes le commissaire divisionnaire Parpaing. Vous partez d'un petit poste d
   - son montant est réduit, puis supprimé, si la signalisation PTS ne suit pas ;
   - l'objectif monte quand il est atteint et baisse un peu quand il est manqué.
 - Chaque semaine rapporte jusqu'à 3 étoiles : objectif de dossiers atteint, signalisation PTS ≥ 95 %, et un critère propre au commissariat.
-- À 10 étoiles, la **carte des affectations** permet d'être muté au commissariat suivant. Chaque nouveau poste ajoute un problème :
+- À 100 étoiles gagnées dans un commissariat, la **carte des affectations** permet d'être muté au commissariat suivant. Chaque nouveau poste ajoute un problème :
   1. **Saint-Parpaing-les-Choux** (campagne) : pas de problème particulier, on apprend le métier.
   2. **Parpaing-Ville** : les GAV ivres vomissent dans les couloirs, il faut une équipe de ménage.
   3. **Grand-Parpaing** (métropole) : des GAV qui puent des pieds, la PTS a besoin de masques à gaz, sinon elle fait des malaises.

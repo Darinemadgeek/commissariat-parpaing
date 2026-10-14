@@ -267,6 +267,9 @@ window.GM = (function () {
     if (d) { d.e = Math.min(1, d.e + k); if (d.p > 0) d.p = Math.min(1, d.p + k); }
     return v;
   }
+  // débits par minute : ce que les enquêteurs bouclent, ce que la PTS peut signaliser
+  const invPerMin = () => (60 * G.n.inv * (1 + 0.25 * G.up.coffee) * turbo() * slip()) / T.ENQ_TIME;
+  const ptsPerMin = () => (60 * Math.max(0, G.n.pts - G.ptsDown.length) * (1 + 0.3 * G.up.bio) * turbo() * slip()) / T.PTS_TIME;
   const rate = () => earnedLog.reduce((s, e) => s + e[1], 0) / Math.min(20, Math.max(5, perf));
 
   // ---------- sauvegarde ----------
@@ -297,6 +300,6 @@ window.GM = (function () {
     gavValue, plaValue, tamponValue, capacity, hallCap, cellCap, unitCost, upCost, bulk, unitOn, upOn,
     buyUnit, buyUp, build, upTier, canMove, move, tampon, rate, save, load,
     perf: () => perf, lost: () => lostFlash > 0, buffOn, addBuff: (id, dur, label) => G.buffs.push({ id, until: perf + dur, label }),
-    earn, slip,
+    earn, slip, invPerMin, ptsPerMin,
   };
 })();
