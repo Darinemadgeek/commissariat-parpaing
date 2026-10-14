@@ -5,7 +5,7 @@ window.GM = (function () {
   const G = {};
   const ui = { float() {}, toast() {}, pv() {}, fx: { arrive: 0, release: 0, citizen: 0, toPla: 0, angry: 0, toPts: 0 } };
 
-  const newWeek = no => ({ no, t: 0, gav: 0, sig: 0, unsig: 0, pla: 0, recus: 0, partis: 0, lost: 0, earned: 0, levees: 0, malaises: 0, cleanSum: 0 });
+  const newWeek = no => ({ no, t: 0, gav: 0, sig: 0, unsig: 0, pla: 0, recus: 0, partis: 0, lost: 0, earned: 0, levees: 0, malaises: 0, cleanSum: 0, tampons: 0 });
   function fresh(keep) {
     keep = keep || {};
     return {
@@ -17,7 +17,7 @@ window.GM = (function () {
       tier: 0, det: [], hall: 0, cit: 0, citT: 0, plaQ: 0, plaW: [], pistes: 0,
       vomit: 0, cleanT: 0, ptsDown: [], manifIn: T.MANIF_EVERY, manifLeft: 0,
       acc: { patrol: 0, cit: 0 },
-      week: newWeek(1), objective: T.OBJ_START, buffs: [], pending: null,
+      week: newWeek(1), objective: T.OBJ_START, buffs: [], pending: null, quests: [],
       total: keep.total || { gav: 0, pla: 0, primes: 0 }, goldenIn: 40, lastSave: Date.now(), rateEst: 0,
     };
   }
@@ -77,6 +77,36 @@ window.GM = (function () {
     // pas de jauge pleine, pas de prime ; la qualité PTS et les usagers en modulent le montant
     const prime = quota ? w.earned * T.PRIME_BASE * 2 * q * sat * (1 + 0.25 * n) * (1 + 0.15 * G.up.crois) : 0;
     return { prime, q, sat, quota, dossiers, r, s, st, n };
+  }
+
+  // ---------- missions du préfet (tirées certains lundis, étoiles en plus) ----------
+  const pc = v => Math.round(v * 100) + ' %';
+  const QUESTS = {
+    double: { w: 1, name: 'Semaine étoilée', reward: 0, desc: () => 'Le préfet est de bonne humeur : toutes les étoiles de la semaine comptent double.', prog: () => ({ done: true, txt: 'étoiles ×2' }) },
+    over: { w: 3, name: 'Au-delà des attentes', reward: 2, target: () => Math.ceil(G.objective * 1.5), desc: q => `Traitez ${q.target} dossiers, 50 % de plus que l'objectif préfectoral.`, prog: (w, q) => ({ done: w.gav + w.pla >= q.target, txt: `${w.gav + w.pla}/${q.target} dossiers` }) },
+    sig100: { w: 3, name: 'Zéro oubli', reward: 2, desc: () => 'Finissez la semaine à 100 % de signalisation, avec au moins 10 GAV auditionnées.', prog: w => ({ done: w.gav >= 10 && w.sig === w.gav, txt: w.gav ? `${w.sig}/${w.gav} signalisées` : '0 GAV' }) },
+    sat95: { w: 2, ok: () => G.built.accueil, name: 'Accueil cinq étoiles', reward: 2, desc: () => "Au moins 95 % d'usagers bien reçus, sur 10 usagers minimum.", prog: w => { const n = w.recus + w.partis; return { done: n >= 10 && w.recus / n >= 0.95, txt: n ? `${pc(w.recus / n)} (${w.recus}/${n})` : '0 usager' }; } },
+    pla: { w: 2, ok: () => G.built.plaintes, name: 'Opération guichet', reward: 1, target: () => Math.max(6, Math.round(G.objective * 0.5)), desc: q => `Traitez au moins ${q.target} plaintes cette semaine.`, prog: (w, q) => ({ done: w.pla >= q.target, txt: `${w.pla}/${q.target} plaintes` }) },
+    nolost: { w: 2, name: 'Pas un de perdu', reward: 1, desc: () => 'Aucun suspect relâché faute de place, avec au moins 10 GAV auditionnées.', prog: w => ({ done: w.gav >= 10 && w.lost === 0, txt: `${w.lost} relâché${w.lost > 1 ? 's' : ''} · ${w.gav} GAV` }) },
+    tampon: { w: 2, name: "Bras d'acier", reward: 1, target: () => 150, desc: q => `Donnez ${q.target} coups de tampon cette semaine.`, prog: (w, q) => ({ done: w.tampons >= q.target, txt: `${w.tampons}/${q.target} coups` }) },
+    clean97: { w: 2, ok: () => has('vomi'), name: 'Couloirs nickel', reward: 2, desc: () => 'Propreté moyenne des couloirs ≥ 97 % sur la semaine.', prog: w => ({ done: cleanRate(w) >= 0.97, txt: pc(cleanRate(w)) }) },
+    nofaint: { w: 2, ok: () => has('pieds') && here().star3.id !== 'faint', name: 'Nez bouchés', reward: 1, desc: () => 'Aucun malaise à la PTS de toute la semaine.', prog: w => ({ done: w.malaises === 0 && w.gav > 0, txt: `${w.malaises} malaise${w.malaises > 1 ? 's' : ''}` }) },
+    nolevee: { w: 2, ok: () => has('delai') && here().star3.id !== 'levee', name: 'Dans les délais', reward: 1, desc: () => 'Aucune GAV levée pour délai dépassé.', prog: w => ({ done: w.levees === 0 && w.gav > 0, txt: `${w.levees} levée${w.levees > 1 ? 's' : ''}` }) },
+  };
+  function rollQuests() {
+    G.quests = [];
+    const n = Math.random() < 0.6 ? (Math.random() < 0.25 ? 2 : 1) : 0;
+    for (let k = 0; k < n; k++) {
+      const pool = Object.entries(QUESTS).filter(([id, q]) => (!q.ok || q.ok()) && !G.quests.some(x => x.id === id));
+      const tot = pool.reduce((s, [, q]) => s + q.w, 0);
+      let r = Math.random() * tot;
+      for (const [id, q] of pool) { if ((r -= q.w) <= 0) { G.quests.push({ id, target: q.target ? q.target() : 0 }); break; } }
+    }
+  }
+  function questInfo(q, w) {
+    const d = QUESTS[q.id]; if (!d) return null;
+    const p = d.prog(w || G.week, q);
+    return { id: q.id, name: d.name, reward: d.reward, double: q.id === 'double', desc: d.desc(q), done: p.done, txt: p.txt };
   }
 
   // ---------- simulation ----------
@@ -217,13 +247,19 @@ window.GM = (function () {
     const w = G.week, p = primeCalc(w);
     if (G.pending) collect();
     const before = G.cstars;
-    G.cstars += p.n;
-    G.pending = { no: w.no, ...p, gav: w.gav, sig: w.sig, pla: w.pla, lost: w.lost, recus: w.recus, partis: w.partis, earned: w.earned, objective: G.objective, levees: w.levees, malaises: w.malaises, clean: cleanRate(w), crit3: here().star3.label };
+    const quests = (G.quests || []).map(q => questInfo(q, w)).filter(Boolean);
+    const bonus = quests.reduce((s, q) => s + (q.done ? q.reward : 0), 0);
+    const dbl = quests.some(q => q.double);
+    const gained = (p.n + bonus) * (dbl ? 2 : 1);
+    G.cstars += gained;
+    G.pending = { no: w.no, ...p, quests, bonus, dbl, gained, gav: w.gav, sig: w.sig, pla: w.pla, lost: w.lost, recus: w.recus, partis: w.partis, earned: w.earned, objective: G.objective, levees: w.levees, malaises: w.malaises, clean: cleanRate(w), crit3: here().star3.label };
     if (p.quota) G.objective = Math.ceil(Math.max(G.objective * 1.2, p.dossiers * 1.05));
     else G.objective = Math.max(T.OBJ_START, Math.ceil(G.objective * 0.9));
     if (p.n === 3) G.medals = Math.min(G.medals + 1, 6);
     G.week = newWeek(w.no + 1);
+    rollQuests();
     ui.pv();
+    if (G.quests.length) setTimeout(() => G.quests.forEach(q => { const i = questInfo(q); if (i) ui.toast(`Lundi : mission du préfet « ${i.name} » ! ${i.desc}${i.double ? '' : ` Récompense : +${i.reward} ★.`}`); }), 900);
     if (before < T.STARS_TO_MOVE && G.cstars >= T.STARS_TO_MOVE) setTimeout(() => ui.toast(`${T.STARS_TO_MOVE} étoiles ! Une mutation est possible : ouvrez la carte.`), 1500);
   }
   function collect() {
@@ -265,6 +301,7 @@ window.GM = (function () {
   function tampon() {
     const v = tamponValue();
     earn(v, 'parp');
+    G.week.tampons = (G.week.tampons || 0) + 1;
     const d = G.det[0], k = 0.06 * Math.pow(1.5, G.up.stamp);
     if (d) { d.e = Math.min(1, d.e + k); if (d.p > 0) d.p = Math.min(1, d.p + k); }
     return v;
@@ -291,6 +328,7 @@ window.GM = (function () {
     });
     m.det = (Array.isArray(d.det) ? d.det : []).map(x => ({ e: +x.e || 0, p: +x.p || 0, t: +x.t || 0, drunk: !!x.drunk, smelly: !!x.smelly, lawyer: !!x.lawyer }));
     m.plaW = Array.isArray(d.plaW) ? d.plaW : [];
+    m.quests = Array.isArray(d.quests) ? d.quests.filter(q => q && QUESTS[q.id]) : [];
     if (m.pending && !(m.pending.prime >= 0)) m.pending = null;
     if (m.pending && !m.pending.st) { m.money += m.pending.prime || 0; m.pending = null; } // PV de l'ancienne version : prime versée
     reset(m);
@@ -302,6 +340,6 @@ window.GM = (function () {
     gavValue, plaValue, tamponValue, capacity, hallCap, cellCap, unitCost, upCost, bulk, unitOn, upOn,
     buyUnit, buyUp, build, upTier, canMove, move, tampon, rate, save, load,
     perf: () => perf, lost: () => lostFlash > 0, buffOn, addBuff: (id, dur, label, malus) => G.buffs.push({ id, until: perf + dur, label, malus: !!malus }),
-    earn, slip, invPerMin, ptsPerMin,
+    earn, slip, invPerMin, ptsPerMin, questInfo,
   };
 })();

@@ -40,11 +40,12 @@
         <dt>${star(p.st[0])} Dossiers traités</dt><dd>${fmt(p.dossiers)} / ${fmt(p.objective)}</dd>
         <dt>${star(p.st[1])} Signalisation PTS ≥ 95 %</dt><dd>${pct(p.r)} (${fmt(p.sig)}/${fmt(p.gav)})</dd>
         <dt>${star(p.st[2])} ${p.crit3}</dt><dd>${crit3Val(p)}</dd>
+        ${(p.quests || []).map(q => `<dt>${q.double ? '★×2' : q.done ? '✔' : '✘'} Mission : ${q.name}</dt><dd>${q.double ? 'étoiles ×2' : q.done ? '+' + q.reward + ' ★' : '0 ★'}</dd>`).join('')}
         <dt class="opt">dont GAV / plaintes</dt><dd class="opt">${fmt(p.gav)} / ${fmt(p.pla)}</dd>
         <dt class="opt">Recettes de la semaine</dt><dd class="opt">${eur(p.earned)}</dd>
         <dt><b>Prime</b></dt><dd><b>${eur(p.prime)}</b></dd>
       </dl>
-      <p class="comment">« ${talk} »${p.quota ? (ok ? '' : ' Signalisation PTS sous 70 % : pas de prime.') : ' Objectif de dossiers manqué : pas de prime.'} +${p.n} étoile${p.n > 1 ? 's' : ''} pour votre dossier de mutation (${Math.min(G.cstars, T.STARS_TO_MOVE)}/${T.STARS_TO_MOVE}).</p>
+      <p class="comment">« ${talk} »${p.quota ? (ok ? '' : ' Signalisation PTS sous 70 % : pas de prime.') : ' Objectif de dossiers manqué : pas de prime.'} +${p.gained ?? p.n} étoile${(p.gained ?? p.n) > 1 ? 's' : ''} pour votre dossier de mutation (${Math.min(G.cstars, T.STARS_TO_MOVE)}/${T.STARS_TO_MOVE}).</p>
       <button type="button" id="pvBtn">${ok ? 'Encaisser la prime' : 'Classer sans suite'}</button>
     </div>`;
     $('pvBtn').onclick = collect;
@@ -150,7 +151,7 @@
       }, true);
       const h = GM.here();
       if (h.problems.length) addEl('p', 'mini', '<b>Problèmes de ce commissariat.</b><br>' + h.problems.map(k => `<b>${PROBLEMS[k].name} :</b> ${PROBLEMS[k].desc}`).join('<br>'));
-      addEl('p', 'mini', `<b>Étoiles de la semaine.</b> 1 étoile si l'objectif de dossiers (GAV + plaintes) est atteint, 1 si la signalisation PTS atteint 95 %, 1 pour le critère local : ${h.star3.label.toLowerCase()}. À ${T.STARS_TO_MOVE} étoiles, vous pouvez demander votre mutation sur la carte.<br><br><b>Taux de signalisation.</b> Personnes signalisées par la PTS, divisées par les personnes passées en GAV et auditionnées par les enquêteurs cette semaine. Une personne qui sort avant la fin de sa signalisation compte comme non signalisée. Une signalisation (14 s) est plus longue qu'une audition (12 s) : il faut plus d'agents PTS que d'enquêteurs, ou la borne biométrique.<br><br><b>Prime.</b> Versée uniquement si la jauge d'objectif est pleine : 50 % des recettes de la semaine, réduite si la PTS ne suit pas (rien sous 70 %) ou si des usagers repartent fâchés, +25 % par étoile. Objectif manqué : il baisse un peu la semaine suivante.<br><br><b>Astuces.</b> Les plaintes donnent des pistes : avec des pistes, les patrouilles vont deux fois plus vite. Un clic sur le commissaire ou sur le tampon accélère la GAV la plus ancienne. Attrapez les croissants dorés.`);
+      addEl('p', 'mini', `<b>Étoiles de la semaine.</b> 1 étoile si l'objectif de dossiers (GAV + plaintes) est atteint, 1 si la signalisation PTS atteint 95 %, 1 pour le critère local : ${h.star3.label.toLowerCase()}. À ${T.STARS_TO_MOVE} étoiles, vous pouvez demander votre mutation sur la carte.<br><br><b>Missions du préfet.</b> Certains lundis, une ou deux missions apparaissent dans la carte de la semaine : dépasser l'objectif, finir à 100 % de signalisation, soigner l'accueil… Réussies dimanche soir, elles rapportent des étoiles en plus. La « Semaine étoilée » double toutes les étoiles de la semaine.<br><br><b>Taux de signalisation.</b> Personnes signalisées par la PTS, divisées par les personnes passées en GAV et auditionnées par les enquêteurs cette semaine. Une personne qui sort avant la fin de sa signalisation compte comme non signalisée. Une signalisation (14 s) est plus longue qu'une audition (12 s) : il faut plus d'agents PTS que d'enquêteurs, ou la borne biométrique.<br><br><b>Prime.</b> Versée uniquement si la jauge d'objectif est pleine : 50 % des recettes de la semaine, réduite si la PTS ne suit pas (rien sous 70 %) ou si des usagers repartent fâchés, +25 % par étoile. Objectif manqué : il baisse un peu la semaine suivante.<br><br><b>Astuces.</b> Les plaintes donnent des pistes : avec des pistes, les patrouilles vont deux fois plus vite. Un clic sur le commissaire ou sur le tampon accélère la GAV la plus ancienne. Attrapez les croissants dorés.`);
     }
     list.scrollTop = scroll;
   }
@@ -305,8 +306,14 @@
     st1: () => `<strong>Étoile 1 : objectif</strong>Gagnée si la jauge d'objectif est pleine dimanche soir.${calc(`${G.week.gav + G.week.pla} / ${G.objective} dossiers`)}`,
     st2: () => `<strong>Étoile 2 : signalisation</strong>Gagnée si au moins 95 % des personnes auditionnées cette semaine ont été signalisées.${calc(G.week.gav ? `${G.week.sig} / ${G.week.gav} = ${pct(GM.sigRate(G.week))}` : 'Aucune GAV auditionnée')}`,
     st3: () => `<strong>Étoile 3 : ${GM.here().star3.label}</strong>Le critère propre à ${GM.here().name}, mesuré sur toute la semaine.`,
-    cstars: () => `<strong>Étoiles de mutation</strong>Étoiles gagnées dans ce commissariat, 3 au maximum par semaine. À ${T.STARS_TO_MOVE}, la carte permet d'être muté au poste suivant.${calc(`${Math.min(G.cstars, T.STARS_TO_MOVE)} / ${T.STARS_TO_MOVE} étoiles`)}`,
+    q0: () => questTip(0), q1: () => questTip(1),
+    cstars: () => `<strong>Étoiles de mutation</strong>Étoiles gagnées dans ce commissariat : 3 par semaine au maximum, plus les missions du préfet qui tombent certains lundis. À ${T.STARS_TO_MOVE}, la carte permet d'être muté au poste suivant.${calc(`${Math.min(G.cstars, T.STARS_TO_MOVE)} / ${T.STARS_TO_MOVE} étoiles`)}`,
   };
+  function questTip(i) {
+    const q = G.quests && G.quests[i], x = q && GM.questInfo(q);
+    if (!x) return '<strong>Mission terminée</strong>';
+    return `<strong>Mission du préfet : ${x.name}</strong>${x.desc}${calc(x.double ? 'Toutes les étoiles gagnées dimanche (y compris les missions) sont doublées.' : `Récompense : +${x.reward} ★ si c'est réussi dimanche soir · en ce moment : ${x.txt}${x.done ? ' ✔' : ''}`)}`;
+  }
   const tip = document.createElement('div'); tip.className = 'tip'; tip.hidden = true; tip.setAttribute('role', 'tooltip'); document.body.appendChild(tip);
   let tipKey = null, tipEl = null, lastPtr = 'mouse';
   function placeTip() {
@@ -364,6 +371,10 @@
     setHTML($('probs'), rows.map(([a, b, c, k]) => `<div data-tip="${k}" tabindex="0"><span>${a}</span><b class="${c}">${b}</b></div>`).join(''));
     const st = GM.weekStars(W);
     setHTML($('wStars'), [['Objectif', st[0]], ['PTS ≥ 95 %', st[1]], [h.star3.label, st[2]]].map(([l, on], i) => `<span class="${on ? 'on' : ''}" data-tip="st${i + 1}" tabindex="0">${l}</span>`).join(''));
+    setHTML($('quests'), (G.quests || []).map((q, i) => {
+      const x = GM.questInfo(q); if (!x) return '';
+      return `<div class="quest ${x.done && !x.double ? 'done' : ''}" data-tip="q${i}" tabindex="0"><span>Mission : ${x.name} ${x.double ? '(étoiles ×2)' : `(+${x.reward} ★)`}</span><b>${x.double ? 'active' : (x.done ? '✔ ' : '') + x.txt}</b></div>`;
+    }).join(''));
     if (tipKey) placeTip();
     $('cStars').textContent = `★ ${Math.min(G.cstars, T.STARS_TO_MOVE)}/${T.STARS_TO_MOVE}`;
     $('mapBtn').classList.toggle('ready', GM.canMove());
