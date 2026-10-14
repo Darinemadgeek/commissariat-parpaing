@@ -9,6 +9,12 @@
 <meta property="og:description" content="Jeu idle en 3D : bouclez des GAV, traitez les plaintes, signalisez tout le monde et décrochez la prime de la semaine.">
 <meta property="og:type" content="website">
 <meta name="theme-color" content="#111a38">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/favicon-64.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Parpaing">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bowlby+One&family=Rubik:wght@400;500;700;800&family=Special+Elite&display=swap">
@@ -83,6 +89,15 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .wstars span{font-size:11px;font-weight:700;padding:2px 7px;border-radius:99px;background:var(--line);color:var(--ink-dim)}
 .wstars span.on{background:var(--gold);color:#3a2700}
 .wstars span::before{content:"★ "}
+
+/* erreurs et installation */
+.fatal{position:absolute;inset:0;z-index:15;display:grid;place-content:center;gap:12px;padding:24px;text-align:center;background:color-mix(in srgb,var(--night) 92%,transparent);font-weight:700;line-height:1.4}
+.fatal p{margin:0;max-width:340px}
+.fatal button,.install button{font-family:var(--f-display);font-size:15px;background:var(--gyro-blue);color:#fff;border:3px solid var(--line);border-radius:12px;padding:10px 16px;cursor:pointer;box-shadow:0 4px 0 var(--line)}
+.errbar{position:fixed;left:8px;right:8px;bottom:8px;z-index:50;display:flex;gap:10px;align-items:flex-start;background:#b3122a;color:#fff;font-size:12px;line-height:1.4;padding:8px 10px;border-radius:10px;border:2px solid var(--line)}
+.errbar button{margin-left:auto;flex:none;background:none;border:0;color:#fff;font-size:18px;line-height:1;cursor:pointer}
+.install{background:var(--navy);border:2px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;font-size:12.5px;color:var(--ink-dim);line-height:1.4}
+.install b{color:var(--ink);font-size:14px}
 
 /* missions du préfet */
 .quests{display:flex;flex-direction:column;gap:4px;margin-top:8px}
@@ -269,6 +284,20 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 </style>
 </head>
 <body>
+<script>
+// Affiche les erreurs à l'écran (utile sur téléphone, sans console) pour pouvoir les signaler.
+(function () {
+  var seen = [];
+  function show(m) {
+    if (seen.indexOf(m) >= 0 || seen.length > 3) return; seen.push(m);
+    var bar = document.getElementById('errbar');
+    if (!bar) { bar = document.createElement('div'); bar.id = 'errbar'; bar.className = 'errbar'; bar.innerHTML = '<div></div><button type="button" aria-label="Fermer">×</button>'; bar.lastChild.onclick = function () { bar.remove(); }; document.body.appendChild(bar); }
+    bar.firstChild.innerHTML += '<div>Erreur : ' + String(m).replace(/</g, '&lt;') + '. Faites une capture d\'écran pour la signaler.</div>';
+  }
+  addEventListener('error', function (e) { show((e.message || 'erreur inconnue') + (e.filename ? ' (' + e.filename.split('/').pop() + ':' + e.lineno + ')' : '')); });
+  addEventListener('unhandledrejection', function (e) { show('promesse rejetée : ' + ((e.reason && e.reason.message) || e.reason)); });
+})();
+</script>
 <div class="app">
   <main class="stage" id="stage">
     <canvas id="gl" aria-label="Vue 3D du commissariat. Glissez pour tourner, molette pour zoomer, cliquez sur le commissaire Parpaing pour tamponner."></canvas>

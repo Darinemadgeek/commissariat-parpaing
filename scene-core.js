@@ -4,10 +4,27 @@ window.S = (function () {
   const canvas = document.getElementById('gl');
   const tagsBox = document.getElementById('tags');
 
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  // Téléphones : résolution et ombres réduites pour ménager la mémoire graphique
+  const LOW = matchMedia('(pointer: coarse)').matches || Math.min(screen.width, screen.height) < 820;
+  function fatal(msg) {
+    if (document.getElementById('fatal')) return;
+    const d = document.createElement('div'); d.id = 'fatal'; d.className = 'fatal';
+    d.innerHTML = `<p>${msg}</p><button type="button">Relancer le jeu</button>`;
+    d.querySelector('button').onclick = () => location.reload();
+    stage.appendChild(d);
+  }
+  let renderer = null;
+  try {
+    renderer = new THREE.WebGLRenderer({ canvas, antialias: !LOW, powerPreference: 'default' });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, LOW ? 1.5 : 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  } catch (e) {
+    renderer = null;
+    fatal("Ce navigateur n'arrive pas à afficher la 3D (WebGL indisponible). Essayez avec Chrome à jour, ou réactivez l'accélération matérielle.");
+  }
+  canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); fatal('La 3D s\'est mise en pause : le téléphone a manqué de mémoire graphique. Votre partie est sauvegardée.'); });
+  canvas.addEventListener('webglcontextrestored', () => location.reload());
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color('#a8dcff');
@@ -37,7 +54,7 @@ window.S = (function () {
   const sun = new THREE.DirectionalLight('#fff0d4', 0.85);
   sun.position.set(34, 56, 24);
   sun.castShadow = true;
-  sun.shadow.mapSize.set(2048, 2048);
+  sun.shadow.mapSize.set(LOW ? 1024 : 2048, LOW ? 1024 : 2048);
   Object.assign(sun.shadow.camera, { left: -48, right: 48, top: 48, bottom: -48, near: 1, far: 160 });
   sun.shadow.bias = -0.0006;
   scene.add(sun);
@@ -153,7 +170,7 @@ window.S = (function () {
   function resize() {
     const w = stage.clientWidth, h = stage.clientHeight;
     if (!w || !h) return;
-    renderer.setSize(w, h, false);
+    if (renderer) renderer.setSize(w, h, false);
     camera.aspect = w / h;
     camera.fov = w / h < 1 ? 54 : w / h < 1.4 ? 44 : 36;
     camera.updateProjectionMatrix();
@@ -183,7 +200,7 @@ window.S = (function () {
       t.el.style.transform = `translate(${s.x}px,${s.y}px) translate(-50%,-100%)`;
       t.el.style.visibility = s.vis ? '' : 'hidden';
     }
-    renderer.render(scene, camera);
+    if (renderer) renderer.render(scene, camera);
     requestAnimationFrame(loop);
   }
   requestAnimationFrame(loop);

@@ -67,7 +67,10 @@
   Object.assign(GM.ui, { float: floatAt, toast, pv: showPV });
 
   // ---------- boutique ----------
-  let tab = 'staff', cards = [], shape = '', buyX = 1;
+  let tab = 'staff', cards = [], shape = '', buyX = 1, installEvt = null;
+  // Chrome propose l'installation : on garde l'événement pour le bouton de l'onglet Dossier
+  window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); installEvt = e; render(); });
+  window.addEventListener('appinstalled', () => { installEvt = null; toast('Le jeu est installé sur votre écran d\'accueil !'); render(); });
   const list = $('list');
   function mkCard(spec, onClick) {
     const b = document.createElement('button');
@@ -135,6 +138,14 @@
         return { icon: 'mutation', name: ok ? 'Mutation possible !' : 'Carte des affectations', desc: ok ? `Vous avez ${T.STARS_TO_MOVE} étoiles. Prochain poste : ${nx.name} (${nx.kind}).` : `Gagnez ${T.STARS_TO_MOVE} étoiles en fin de semaine pour être muté à ${nx.name}. Chaque semaine rapporte jusqu'à 3 étoiles.`, owned: '★' + Math.min(G.cstars, T.STARS_TO_MOVE), cost: 'voir la carte', can: true, cls: ok ? 'danger' : '' };
       }, () => openMap());
     } else {
+      // installation sur téléphone
+      const inst = document.createElement('div'); inst.className = 'install';
+      const standalone = matchMedia('(display-mode: standalone)').matches;
+      inst.innerHTML = standalone ? '<b>Le jeu est installé sur cet appareil.</b>'
+        : `<b>Installer le jeu sur ce téléphone</b>${installEvt ? '<button type="button" id="installBtn">Installer le jeu</button>' : ''}<span>Sinon, dans Chrome sur Android : menu ⋮ puis « Installer l'application » ou « Ajouter à l'écran d'accueil ». Sur iPhone, dans Safari : bouton Partager puis « Sur l'écran d'accueil ». La partie reste sauvegardée.</span>`;
+      list.appendChild(inst);
+      const ib = inst.querySelector('#installBtn');
+      if (ib) ib.onclick = () => { installEvt.prompt(); installEvt.userChoice.finally(() => { installEvt = null; render(); }); };
       addEl('div', 'dossier', () => {
         const p = GM.primeCalc(G.week), h = GM.here();
         return `<h3>Dossier du commissaire Parpaing</h3><dl>
@@ -156,7 +167,7 @@
     list.scrollTop = scroll;
   }
   function render() {
-    const s = [tab, buyX, G.site, G.built.accueil, G.built.plaintes, GM.canMove()].join('|');
+    const s = [tab, buyX, G.site, G.built.accueil, G.built.plaintes, GM.canMove(), !!installEvt].join('|');
     if (s !== shape) { shape = s; rebuild(); } else cards.forEach(c => c.upd());
   }
   function effLine(id) {
@@ -487,6 +498,8 @@
     render(); hud(); radio();
     requestAnimationFrame(t => { last = t; frame(t); });
   }
+  // appli installable et jouable hors ligne (en https uniquement, comme sur GitHub Pages)
+  if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
   window.addEventListener('beforeunload', GM.save);
   document.addEventListener('visibilitychange', () => { if (document.hidden) GM.save(); });
   window.claude?.hot?.snapshot?.(() => JSON.parse(JSON.stringify(G)));

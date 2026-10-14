@@ -1,0 +1,17 @@
+{
+  "name": "Commissariat Parpaing",
+  "short_name": "Parpaing",
+  "description": "Jeu idle en 3D : dirigez le commissariat, bouclez des GAV, traitez les plaintes et décrochez la prime de la semaine.",
+  "lang": "fr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#111a38",
+  "theme_color": "#111a38",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
