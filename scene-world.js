@@ -199,11 +199,13 @@
       if (kind === 'ville' && i === 3 && j === 3) { park(p, x0, x1, z0, z1); continue; }
       if (kind === 'cite' && i === 1 && j === 3) { court(p, x0, x1, z0, z1); continue; }
       const m = 2, X0 = x0 + m, X1 = x1 - m, Z0 = z0 + m, Z1 = z1 - m;
-      const H = () => Math.round(rr(C.fl[0], C.fl[1])) * 3;
-      if (C.slabs && rand() < 0.6) { building(p, X1 - X0 - 4, H() + 6, 11, 'hlm', cx, Z0 + 6, near); building(p, X1 - X0 - 4, H() + 6, 11, 'hlm', cx, Z1 - 6, near); continue; }
+      // les pâtés collés au commissariat restent bas : ils ne cachent jamais la vue
+      const ring1 = Math.abs(cx) < 100 && cz > -90 && cz < 76;
+      const H = () => Math.round(ring1 ? rr(2, Math.min(4, C.fl[1])) : rr(C.fl[0], C.fl[1])) * 3;
+      if (C.slabs && rand() < 0.6) { const hh = ring1 ? 12 : H() + 6; building(p, X1 - X0 - 4, hh, 11, 'hlm', cx, Z0 + 6, near); building(p, X1 - X0 - 4, hh, 11, 'hlm', cx, Z1 - 6, near); continue; }
       for (let x = X0; x < X1 - 5;) { const w = Math.min(rr(9, 15), X1 - x), d = rr(9, 12), st = pick(C.styles); building(p, w - 0.4, H(), d, st, x + w / 2, Z1 - d / 2, near); building(p, w - 0.4, H(), d, pick(C.styles), x + w / 2, Z0 + d / 2, near); x += w; }
       for (let z = Z0 + 12; z < Z1 - 12 - 5;) { const w = Math.min(rr(9, 14), Z1 - 12 - z), d = rr(9, 12); building(p, d, H(), w - 0.4, pick(C.styles), X0 + d / 2, z + w / 2, near); building(p, d, H(), w - 0.4, pick(C.styles), X1 - d / 2, z + w / 2, near); z += w; }
-      if (rand() < C.tower) building(p, rr(12, 16), Math.round(rr(C.tf[0], C.tf[1])) * 3, rr(12, 16), pick(C.styles), cx, cz, near);
+      if (!ring1 && rand() < C.tower) building(p, rr(12, 16), Math.round(rr(C.tf[0], C.tf[1])) * 3, rr(12, 16), pick(C.styles), cx, cz, near);
       for (let k = 0; k < 4; k++) tree(p, x0 + 1 + k * (x1 - x0 - 2) / 3, z1 + 1.2, 0.7, near);
     }
     // silhouette lointaine

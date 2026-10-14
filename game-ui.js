@@ -6,9 +6,11 @@
 
   // ---------- retours visuels ----------
   function toast(msg) {
+    // le temps d'affichage suit la longueur du message ; un tap le ferme
     const el = document.createElement('div'); el.className = 'toast'; el.textContent = msg;
+    el.onclick = () => el.remove();
     $('toasts').appendChild(el);
-    setTimeout(() => el.remove(), 3800);
+    setTimeout(() => el.remove(), Math.max(4000, Math.min(12000, msg.length * 70)));
     while ($('toasts').children.length > 3) $('toasts').firstChild.remove();
   }
   let floats = 0;
@@ -46,7 +48,7 @@
       <button type="button" id="pvBtn">${ok ? 'Encaisser la prime' : 'Classer sans suite'}</button>
     </div>`;
     $('pvBtn').onclick = collect;
-    pvAuto = 14;
+    pvAuto = 20;
   }
   function crit3Val(p) {
     const id = GM.here().star3.id;
@@ -181,6 +183,22 @@
     document.querySelectorAll('#buyx button').forEach(x => x.setAttribute('aria-pressed', x === b));
     render();
   });
+  // Téléphone : boutique repliable (mémorisée pour ce navigateur) et stats de la semaine dépliables
+  const app = document.querySelector('.app'), small = matchMedia('(max-width:860px)');
+  function setSheet(mini) {
+    app.classList.toggle('mini', mini);
+    $('sheetBtn').textContent = mini ? '▴ Boutique' : '▾ Réduire';
+    $('sheetBtn').setAttribute('aria-expanded', String(!mini));
+    try { localStorage.setItem('cp-sheet-mini', mini ? '1' : '0'); } catch (e) { /* stockage indisponible */ }
+  }
+  $('sheetBtn').onclick = () => setSheet(!app.classList.contains('mini'));
+  let sheetMini = false; try { sheetMini = localStorage.getItem('cp-sheet-mini') === '1'; } catch (e) { /* stockage indisponible */ }
+  setSheet(sheetMini);
+  $('weekBtn').onclick = () => {
+    const open = !$('weekCard').classList.contains('open');
+    $('weekCard').classList.toggle('open', open);
+    $('weekBtn').textContent = open ? '−' : '+'; $('weekBtn').setAttribute('aria-expanded', String(open));
+  };
   const tampon = () => { GM.tampon(); S.parpaingHit(); };
   $('tamponBtn').onclick = tampon;
   S.onParpaing = tampon;
@@ -330,8 +348,10 @@
     const lost = $('sLost'); lost.textContent = fmt(W.lost); lost.className = W.lost ? 'bad' : '';
     // la jauge dit exactement si la prime tombera
     const pc = GM.primeCalc(W), full = dos >= G.objective, state = !full ? '' : pc.prime > 0 ? 'full' : 'void';
-    $('objTxt').textContent = !full ? `Objectif préfectoral : ${fmt(dos)} / ${fmt(G.objective)} dossiers · prime si la jauge est pleine`
-      : pc.prime > 0 ? `Objectif atteint ✔ · prime estimée ${eur(pc.prime)}` : 'Objectif atteint, mais signalisation PTS sous 70 % : pas de prime';
+    $('objTxt').textContent = small.matches
+      ? (!full ? `Objectif ${fmt(dos)}/${fmt(G.objective)} · PTS ${pct(r)}` : pc.prime > 0 ? `Objectif ✔ · prime ${eur(pc.prime)}` : 'Objectif ✔ · PTS < 70 % : 0 €')
+      : (!full ? `Objectif préfectoral : ${fmt(dos)} / ${fmt(G.objective)} dossiers · prime si la jauge est pleine`
+        : pc.prime > 0 ? `Objectif atteint ✔ · prime estimée ${eur(pc.prime)}` : 'Objectif atteint, mais signalisation PTS sous 70 % : pas de prime');
     $('objBar').style.width = Math.min(100, (dos / G.objective) * 100) + '%';
     $('objBar').className = state; $('objTxt').parentNode.className = 'obj ' + state;
     // problèmes du lieu

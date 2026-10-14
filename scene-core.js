@@ -21,13 +21,16 @@ window.S = (function () {
   controls.dampingFactor = 0.08;
   controls.enablePan = false;
   controls.minDistance = 18;
-  controls.maxDistance = 150;
+  controls.maxDistance = 115;
   controls.minPolarAngle = 0.25;
   controls.maxPolarAngle = 1.3;
+  // on reste côté façade : la tour administrative (derrière) ne cache jamais les pièces
+  controls.minAzimuthAngle = -1.25;
+  controls.maxAzimuthAngle = 1.25;
   controls.autoRotate = true;
   controls.autoRotateSpeed = 0.2;
-  let idleT = 0;
-  controls.addEventListener('start', () => { controls.autoRotate = false; idleT = 0; });
+  let idleT = 0, userMoved = false;
+  controls.addEventListener('start', () => { controls.autoRotate = false; idleT = 0; userMoved = true; });
 
   const hemi = new THREE.HemisphereLight('#e4f4ff', '#5d7d3c', 0.8);
   scene.add(hemi);
@@ -154,6 +157,8 @@ window.S = (function () {
     camera.aspect = w / h;
     camera.fov = w / h < 1 ? 54 : w / h < 1.4 ? 44 : 36;
     camera.updateProjectionMatrix();
+    // téléphone en portrait : vue plus plongeante, tant que le joueur n'a pas bougé la caméra
+    if (!userMoved) { if (w / h < 1) camera.position.set(20, 66, 40); else camera.position.set(36, 40, 50); }
   }
   new ResizeObserver(resize).observe(stage);
   resize();
@@ -165,6 +170,11 @@ window.S = (function () {
     const dt = Math.min(clock.getDelta(), 0.1);
     time += dt;
     if (!controls.autoRotate && (idleT += dt) > 25) controls.autoRotate = true;
+    if (controls.autoRotate) { // aller-retour devant le bâtiment
+      const az = controls.getAzimuthalAngle(), sp = Math.abs(controls.autoRotateSpeed);
+      if (az > controls.maxAzimuthAngle - 0.05) controls.autoRotateSpeed = sp;
+      else if (az < controls.minAzimuthAngle + 0.05) controls.autoRotateSpeed = -sp;
+    }
     controls.update();
     for (const f of frames) f(dt, time);
     for (const t of tags) {

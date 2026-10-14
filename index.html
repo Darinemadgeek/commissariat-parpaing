@@ -167,7 +167,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .pv button{display:block;width:100%;font-family:var(--f-display);font-size:16px;background:var(--gyro-blue);color:#fff;border:3px solid var(--paper-ink);border-radius:10px;padding:10px;cursor:pointer;box-shadow:0 4px 0 var(--paper-ink)}
 
 .toasts{position:absolute;top:12px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;gap:6px;align-items:center;pointer-events:none;width:min(440px,calc(100% - 32px))}
-.toast{background:var(--gold);color:#2b1d00;font-weight:700;font-size:13px;padding:8px 14px;border-radius:10px;border:2px solid var(--line);box-shadow:0 3px 0 var(--line);text-align:center;animation:drop2 .3s ease-out}
+.toast{background:var(--gold);color:#2b1d00;font-weight:700;font-size:13px;padding:8px 14px;border-radius:10px;border:2px solid var(--line);box-shadow:0 3px 0 var(--line);text-align:center;animation:drop2 .3s ease-out;pointer-events:auto;cursor:pointer}
 @keyframes drop2{from{transform:translateY(-12px);opacity:0}}
 
 /* ---------- Panneau ---------- */
@@ -209,21 +209,47 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .mini{font-size:12px;color:var(--ink-dim);line-height:1.45}
 .danger{background:#3a1430;border-color:var(--line)}
 
+.sheetbtn,.weekbtn{display:none}
+/* Téléphone : HUD compact, boutique repliable pour laisser la place au décor */
 @media (max-width:860px){
-  .app{grid-template-columns:1fr;grid-template-rows:minmax(0,55%) minmax(0,45%)}
+  .app{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) minmax(0,42%)}
+  .app.mini{grid-template-rows:minmax(0,1fr) auto}
+  .app.mini .tabs,.app.mini .buyx,.app.mini .list{display:none!important}
   .panel{border-left:0;border-top:3px solid var(--line)}
-  .week{min-width:0;max-width:220px;padding:8px 10px}
-  .stats{grid-template-columns:1fr;font-size:11.5px}
-  .stats .opt{display:none}
-  .cash{padding:8px 10px}
-  .cash .amt{font-size:22px}
-  .tampon{font-size:15px;padding:8px 10px;width:142px}
-  .hud-bottom{min-height:58px}
-  .advice{font-size:12px;max-width:calc(100% - 154px);padding:7px 10px 7px 28px}
-  .wstars,.probs{display:none}
-  .ph{padding:10px 16px 8px}
-  .ph .badge{width:36px;height:36px}
-  .ph .badge::before,.ph .badge::after{top:6px;width:7px;height:16px}
+  .hud{padding:8px 10px;gap:6px;bottom:22px}
+  .card{border-radius:12px;box-shadow:0 3px 0 var(--line)}
+  .cash{padding:6px 10px}
+  .cash .lbl{display:none}
+  .cash .amt{font-size:20px}
+  .cash .rate{font-size:11.5px}
+  .week{min-width:0;width:min(200px,52vw);padding:6px 10px}
+  .week-head .day{font-size:13px}
+  .week .bar{margin:4px 0 4px;height:6px}
+  .week .stats,.week .probs,.week .wstars{display:none}
+  .week.open .stats{display:grid;grid-template-columns:1fr;font-size:11.5px;margin-top:6px}
+  .week.open .stats .opt{display:flex}
+  .week.open .probs:not([hidden]){display:grid;grid-template-columns:1fr;font-size:11.5px}
+  .week.open .wstars{display:flex}
+  .obj{margin-top:2px;font-size:11px}
+  .obj .bar{height:7px}
+  .weekbtn{display:inline-grid;place-items:center;pointer-events:auto;width:24px;height:22px;margin-left:6px;border-radius:7px;border:2px solid var(--line);background:var(--navy-hi);color:var(--ink);font:800 14px/1 var(--f-body);cursor:pointer}
+  .week-head{align-items:center}
+  .week-head .lbl{flex:1}
+  .tag{font-size:10px;padding:2px 6px;border-radius:6px}
+  .tampon{font-size:13px;padding:6px 8px;width:118px;border-radius:12px;box-shadow:0 4px 0 var(--line)}
+  .tampon small{font-size:10.5px}
+  .hud-bottom{min-height:46px}
+  .advice{font-size:11.5px;max-width:calc(100% - 128px);padding:6px 9px 6px 26px}
+  .advice::before{left:10px}
+  .radio{height:22px;font-size:11px}
+  .radio b{font-size:10px;padding:0 8px}
+  .toast{font-size:12px;padding:7px 10px}
+  .ph{padding:8px 16px;gap:8px}
+  .ph .badge{display:none}
+  .ph h1{font-size:16px}
+  .ph p{font-size:11px}
+  .ph .mapbtn{padding:6px 8px;font-size:12px}
+  .sheetbtn{display:block;flex:none;font:800 12px var(--f-body);background:var(--navy-hi);color:var(--ink);border:2px solid var(--line);border-radius:10px;padding:6px 8px;cursor:pointer}
 }
 @media (prefers-reduced-motion:reduce){
   .radio span{animation-duration:60s}
@@ -244,8 +270,8 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
           <div class="rate"><b id="rate">0 €</b> / s</div>
           <div class="buffs" id="buffs"></div>
         </div>
-        <div class="card week">
-          <div class="week-head"><span class="lbl" id="weekNo">Semaine 1</span><span class="day" id="dayName">Lundi</span></div>
+        <div class="card week" id="weekCard">
+          <div class="week-head"><span class="lbl" id="weekNo">Semaine 1</span><span class="day" id="dayName">Lundi</span><button class="weekbtn" id="weekBtn" type="button" aria-expanded="false" aria-label="Afficher les stats de la semaine">+</button></div>
           <div class="bar"><i id="weekBar"></i></div>
           <div class="stats">
             <div data-tip="dos" tabindex="0"><span>Dossiers</span><b id="sDos">0</b></div>
@@ -278,6 +304,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
         <p id="tierName">Poste de police</p>
       </div>
       <button class="mapbtn" id="mapBtn" type="button" data-tip="cstars">Carte · <span id="cStars">★ 0/100</span></button>
+      <button class="sheetbtn" id="sheetBtn" type="button" aria-expanded="true">▾ Réduire</button>
     </div>
     <div class="tabs" role="tablist">
       <button role="tab" id="tab-staff" aria-selected="true" data-tab="staff">Effectifs</button>

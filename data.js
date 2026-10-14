@@ -174,7 +174,7 @@ window.PD = (function () {
     { id: 'prefet', label: 'Visite du préfet : recettes ×5', dur: 30, msg: 'Le préfet passe ! Tout le monde fait semblant de bosser. Recettes ×5 pendant 30 s.' },
     { id: 'bac', label: 'Renfort BAC : patrouilles ×4', dur: 30, msg: 'La BAC arrive en renfort. Patrouilles ×4 pendant 30 s.' },
     { id: 'maxime', label: 'Maxime : PTS +50 %', dur: 30, msg: "Maxime a fait ses dossiers parquet ! La PTS n'a qu'à bien se tenir : efficacité de la PTS augmentée de 50 % pendant 30 secondes." },
-    { id: 'laurine', label: 'Laurine : −5 % partout', dur: 5, malus: true, msg: "Ah mince, pas de chance… même si tomber sur Laurine en est une ! Elle sabote vos locaux : −5 % d'efficacité pendant 5 secondes dans tous les services." },
+    { id: 'laurine', label: 'Laurine : −5 % partout', dur: 20, malus: true, msg: "Ah mince, pas de chance… même si tomber sur Laurine en est une ! Elle sabote vos locaux : −5 % d'efficacité pendant 20 secondes dans tous les services." },
     { id: 'turbo', label: 'Heures sup : traitement ×3', dur: 30, msg: 'Heures sup payées (si si). Enquête, PTS et plaintes ×3 pendant 30 s.' },
     { id: 'cash', label: '', dur: 0, msg: "Saisie d'avoirs criminels ! Le butin part dans la caisse." },
   ];
