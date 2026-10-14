@@ -148,7 +148,7 @@
       }, true);
       const h = GM.here();
       if (h.problems.length) addEl('p', 'mini', '<b>Problèmes de ce commissariat.</b><br>' + h.problems.map(k => `<b>${PROBLEMS[k].name} :</b> ${PROBLEMS[k].desc}`).join('<br>'));
-      addEl('p', 'mini', `<b>Étoiles de la semaine.</b> 1 étoile si l'objectif de dossiers (GAV + plaintes) est atteint, 1 si la signalisation PTS atteint 95 %, 1 pour le critère local : ${h.star3.label.toLowerCase()}. À ${T.STARS_TO_MOVE} étoiles, vous pouvez demander votre mutation sur la carte.<br><br><b>Taux de signalisation.</b> GAV terminées cette semaine avec leur signalisation PTS complète, divisées par toutes les GAV terminées cette semaine. Une personne qui sort avant la fin de sa signalisation compte comme non signalisée. Une signalisation (14 s) est plus longue qu'une audition (12 s) : il faut plus d'agents PTS que d'enquêteurs, ou la borne biométrique.<br><br><b>Prime.</b> Versée uniquement si la jauge d'objectif est pleine : 50 % des recettes de la semaine, réduite si la PTS ne suit pas (rien sous 70 %) ou si des usagers repartent fâchés, +25 % par étoile. Objectif manqué : il baisse un peu la semaine suivante.<br><br><b>Astuces.</b> Les plaintes donnent des pistes : avec des pistes, les patrouilles vont deux fois plus vite. Un clic sur le commissaire ou sur le tampon accélère la GAV la plus ancienne. Attrapez les croissants dorés.`);
+      addEl('p', 'mini', `<b>Étoiles de la semaine.</b> 1 étoile si l'objectif de dossiers (GAV + plaintes) est atteint, 1 si la signalisation PTS atteint 95 %, 1 pour le critère local : ${h.star3.label.toLowerCase()}. À ${T.STARS_TO_MOVE} étoiles, vous pouvez demander votre mutation sur la carte.<br><br><b>Taux de signalisation.</b> Personnes signalisées par la PTS, divisées par les personnes passées en GAV et auditionnées par les enquêteurs cette semaine. Une personne qui sort avant la fin de sa signalisation compte comme non signalisée. Une signalisation (14 s) est plus longue qu'une audition (12 s) : il faut plus d'agents PTS que d'enquêteurs, ou la borne biométrique.<br><br><b>Prime.</b> Versée uniquement si la jauge d'objectif est pleine : 50 % des recettes de la semaine, réduite si la PTS ne suit pas (rien sous 70 %) ou si des usagers repartent fâchés, +25 % par étoile. Objectif manqué : il baisse un peu la semaine suivante.<br><br><b>Astuces.</b> Les plaintes donnent des pistes : avec des pistes, les patrouilles vont deux fois plus vite. Un clic sur le commissaire ou sur le tampon accélère la GAV la plus ancienne. Attrapez les croissants dorés.`);
     }
     list.scrollTop = scroll;
   }
@@ -269,6 +269,51 @@
   }
   function killGolden() { if (golden) golden.el.remove(); golden = null; G.goldenIn = 60 + Math.random() * 70; }
 
+  // ---------- infobulles : comment chaque stat est calculée ----------
+  const calc = s => `<span class="calc">${s}</span>`;
+  const TIPS = {
+    cash: () => `<strong>Caisse du commissariat</strong>L'argent disponible pour recruter, équiper et agrandir.<br><b>€/s</b> : moyenne de vos gains sur les 20 dernières secondes.${calc(`${eur(GM.rate(), 1)} / s en ce moment`)}`,
+    dos: () => `<strong>Dossiers traités</strong>GAV auditionnées + plaintes traitées depuis lundi. C'est ce qui remplit la jauge d'objectif.${calc(`${G.week.gav} GAV + ${G.week.pla} plaintes = ${G.week.gav + G.week.pla} dossiers`)}`,
+    sig: () => { const W = G.week, r = GM.sigRate(W); return `<strong>Taux de signalisation</strong>Personnes signalisées par la PTS ÷ personnes passées en GAV et auditionnées par les enquêteurs cette semaine. Si la personne sort avant la fin de sa signalisation, elle compte comme non signalisée.${calc(W.gav ? `${W.sig} signalisées / ${W.gav} auditionnées = ${pct(r)}` : 'Aucune GAV auditionnée cette semaine')}≥ 95 % : 1 étoile · sous 85 % : prime réduite · sous 70 % : pas de prime.${calc(`PTS : ${fmt(GM.ptsPerMin(), 1)} signalisations/min · enquêteurs : ${fmt(GM.invPerMin(), 1)} auditions/min`)}`; },
+    gav: () => `<strong>GAV auditionnées</strong>Gardes à vue dont l'audition est terminée cette semaine. Chacune rapporte de l'argent.${calc(`${G.week.gav} × ${eur(GM.gavValue(), 1)}`)}`,
+    pla: () => `<strong>Plaintes traitées</strong>Plaintes bouclées par le bureau des plaintes cette semaine. Une sur deux donne une piste : avec des pistes, les patrouilles interpellent deux fois plus vite.${calc(`${G.week.pla} × ${eur(GM.plaValue(), 1)} · ${G.pistes} piste${G.pistes > 1 ? 's' : ''} en stock`)}`,
+    sat: () => { const W = G.week; return `<strong>Usagers bien reçus</strong>Usagers enregistrés au guichet ÷ tous les usagers venus (enregistrés + repartis fâchés parce que la file était pleine). Un accueil débordé réduit la prime, jusqu'à moitié.${calc(W.recus + W.partis ? `${W.recus} reçus / ${W.recus + W.partis} venus = ${pct(GM.satRate(W))}` : "Personne n'est encore venu cette semaine")}`; },
+    lost: () => `<strong>Relâchés faute de place</strong>Suspects ramenés par les patrouilles mais relâchés parce que les cellules et la salle d'attente étaient pleines. Rien n'est encaissé pour eux.${calc(`${GM.capacity()} places en cellule + ${GM.hallCap()} en attente`)}`,
+    obj: () => { const p = GM.primeCalc(G.week); return `<strong>Objectif préfectoral et prime</strong>Dossiers à traiter avant dimanche soir. Jauge pleine : la prime est versée et vous gagnez 1 étoile. Atteint, l'objectif monte de 20 % ; manqué, il baisse de 10 %.${calc(`Prime = 50 % des recettes × qualité PTS × satisfaction usagers × (1 + 25 % par étoile)`)}${calc(`Recettes : ${eur(G.week.earned)} · qualité PTS ${Math.round(p.q * 100)} % · satisfaction ${Math.round(p.sat * 100)} % → ${p.quota ? eur(p.prime) : 'jauge pas pleine : 0 €'}`)}`; },
+    propre: () => `<strong>Propreté des couloirs</strong>100 % moins 4 % par flaque de vomi. Chaque flaque ralentit aussi tout le monde de 3 % (on glisse). Les agents d'entretien nettoient une flaque toutes les ${T.CLEAN_TIME} s chacun.${calc(`${G.vomit} flaque${G.vomit > 1 ? 's' : ''} → ${pct(GM.propre())} · moyenne semaine ${pct(GM.cleanRate(G.week))}`)}`,
+    malaise: () => `<strong>Malaises à la PTS</strong>Un agent PTS sans masque qui signalise une GAV qui pue des pieds travaille à ${T.UNMASKED * 100} % de sa vitesse et peut faire un malaise (${T.FAINT_TIME} s au sol). Un masque équipe un agent.${calc(`${Math.min(G.n.masks, G.n.pts)} / ${G.n.pts} agents équipés · ${G.week.malaises} malaise${G.week.malaises > 1 ? 's' : ''} cette semaine`)}`,
+    levee: () => `<strong>GAV levées</strong>Une GAV dure au maximum ${Math.round(GM.gavLimit())} s (les 24 h légales). Au-delà, elle est levée : pas d'argent, et elle ne compte pas dans les dossiers. Les GAV avec avocat sont auditionnées plus lentement.${calc(`${G.week.levees} levée${G.week.levees > 1 ? 's' : ''} cette semaine`)}`,
+    manif: () => `<strong>Manifestations</strong>Pendant ${T.MANIF_LEN} s, les patrouilles ramènent ${T.MANIF_MULT} fois plus de monde. Prévoyez des cellules et la salle d'attente XXL.${calc(G.manifLeft > 0 ? `Manif en cours : encore ${Math.ceil(G.manifLeft)} s` : `Prochaine manif dans ${Math.ceil(G.manifIn)} s`)}`,
+    st1: () => `<strong>Étoile 1 : objectif</strong>Gagnée si la jauge d'objectif est pleine dimanche soir.${calc(`${G.week.gav + G.week.pla} / ${G.objective} dossiers`)}`,
+    st2: () => `<strong>Étoile 2 : signalisation</strong>Gagnée si au moins 95 % des personnes auditionnées cette semaine ont été signalisées.${calc(G.week.gav ? `${G.week.sig} / ${G.week.gav} = ${pct(GM.sigRate(G.week))}` : 'Aucune GAV auditionnée')}`,
+    st3: () => `<strong>Étoile 3 : ${GM.here().star3.label}</strong>Le critère propre à ${GM.here().name}, mesuré sur toute la semaine.`,
+    cstars: () => `<strong>Étoiles de mutation</strong>Étoiles gagnées dans ce commissariat, 3 au maximum par semaine. À ${T.STARS_TO_MOVE}, la carte permet d'être muté au poste suivant.${calc(`${Math.min(G.cstars, T.STARS_TO_MOVE)} / ${T.STARS_TO_MOVE} étoiles`)}`,
+  };
+  const tip = document.createElement('div'); tip.className = 'tip'; tip.hidden = true; tip.setAttribute('role', 'tooltip'); document.body.appendChild(tip);
+  let tipKey = null, tipEl = null, lastPtr = 'mouse';
+  function placeTip() {
+    if (!tipKey || !tipEl || !tipEl.isConnected) { tipEl = tipKey && document.querySelector(`[data-tip="${tipKey}"]`); if (!tipEl) return hideTip(); }
+    const h = TIPS[tipKey](); if (tip.innerHTML !== h) tip.innerHTML = h;
+    const r = tipEl.getBoundingClientRect(), w = tip.offsetWidth, hh = tip.offsetHeight, vw = innerWidth, vh = innerHeight;
+    let x = Math.min(Math.max(16, r.left + r.width / 2 - w / 2), vw - w - 16), y = r.bottom + 8;
+    if (y + hh > vh - 8) y = Math.max(8, r.top - hh - 8);
+    tip.style.left = x + 'px'; tip.style.top = y + 'px';
+  }
+  function showTip(el) { tipEl = el; tipKey = el.dataset.tip; tip.hidden = false; placeTip(); }
+  function hideTip() { tip.hidden = true; tipKey = null; tipEl = null; }
+  document.addEventListener('pointerdown', e => { lastPtr = e.pointerType; }, true);
+  document.addEventListener('pointerover', e => { if (e.pointerType !== 'mouse') return; const el = e.target.closest('[data-tip]'); if (el && TIPS[el.dataset.tip]) showTip(el); });
+  document.addEventListener('pointerout', e => { if (e.pointerType !== 'mouse') return; const el = e.target.closest('[data-tip]'); if (el && !el.contains(e.relatedTarget)) hideTip(); });
+  document.addEventListener('click', e => {
+    if (lastPtr === 'mouse') return;
+    const el = e.target.closest('[data-tip]');
+    if (el && el.tagName !== 'BUTTON' && TIPS[el.dataset.tip]) { if (tipKey === el.dataset.tip) hideTip(); else showTip(el); }
+    else if (!el) hideTip();
+  });
+  document.addEventListener('focusin', e => { const el = e.target.closest && e.target.closest('[data-tip]'); if (el && TIPS[el.dataset.tip]) showTip(el); });
+  document.addEventListener('focusout', e => { if (e.target.closest && e.target.closest('[data-tip]')) hideTip(); });
+  const setHTML = (el, h) => { if (el.innerHTML !== h) el.innerHTML = h; };
+
   // ---------- HUD ----------
   const cls = (el, v, good, warn) => { el.className = v === null ? '' : v >= good ? 'ok' : v >= warn ? 'warn' : 'bad'; };
   function hud() {
@@ -291,14 +336,15 @@
     $('objBar').className = state; $('objTxt').parentNode.className = 'obj ' + state;
     // problèmes du lieu
     const rows = [];
-    if (GM.has('vomi')) { const p = GM.propre(); rows.push(['Propreté', pct(p), p >= 0.9 ? 'ok' : p >= 0.6 ? 'warn' : 'bad']); }
-    if (GM.has('pieds')) rows.push(['Malaises PTS', W.malaises, W.malaises ? 'bad' : 'ok']);
-    if (GM.has('delai')) rows.push(['GAV levées', W.levees, W.levees ? 'bad' : 'ok']);
-    if (GM.has('manif')) rows.push(['Manif', G.manifLeft > 0 ? 'EN COURS' : 'dans ' + Math.ceil(G.manifIn) + ' s', G.manifLeft > 0 ? 'bad' : '']);
+    if (GM.has('vomi')) { const p = GM.propre(); rows.push(['Propreté', pct(p), p >= 0.9 ? 'ok' : p >= 0.6 ? 'warn' : 'bad', 'propre']); }
+    if (GM.has('pieds')) rows.push(['Malaises PTS', W.malaises, W.malaises ? 'bad' : 'ok', 'malaise']);
+    if (GM.has('delai')) rows.push(['GAV levées', W.levees, W.levees ? 'bad' : 'ok', 'levee']);
+    if (GM.has('manif')) rows.push(['Manif', G.manifLeft > 0 ? 'EN COURS' : 'dans ' + Math.ceil(G.manifIn) + ' s', G.manifLeft > 0 ? 'bad' : '', 'manif']);
     $('probs').hidden = !rows.length;
-    $('probs').innerHTML = rows.map(([a, b, c]) => `<div><span>${a}</span><b class="${c}">${b}</b></div>`).join('');
+    setHTML($('probs'), rows.map(([a, b, c, k]) => `<div data-tip="${k}" tabindex="0"><span>${a}</span><b class="${c}">${b}</b></div>`).join(''));
     const st = GM.weekStars(W);
-    $('wStars').innerHTML = [['Objectif', st[0]], ['PTS ≥ 95 %', st[1]], [h.star3.label.replace(' ≥ ', ' ≥ '), st[2]]].map(([l, on]) => `<span class="${on ? 'on' : ''}">${l}</span>`).join('');
+    setHTML($('wStars'), [['Objectif', st[0]], ['PTS ≥ 95 %', st[1]], [h.star3.label, st[2]]].map(([l, on], i) => `<span class="${on ? 'on' : ''}" data-tip="st${i + 1}" tabindex="0">${l}</span>`).join(''));
+    if (tipKey) placeTip();
     $('cStars').textContent = `★ ${Math.min(G.cstars, T.STARS_TO_MOVE)}/${T.STARS_TO_MOVE}`;
     $('mapBtn').classList.toggle('ready', GM.canMove());
     $('tierName').textContent = `${tier(G.tier).name} · ${h.name}`;
