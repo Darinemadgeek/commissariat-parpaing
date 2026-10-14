@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Commissariat Parpaing</title>
+<meta name="description" content="Jeu idle en 3D : dirigez le commissariat de Parpaing-sur-Mer, bouclez des GAV, traitez les plaintes et décrochez la prime de la semaine.">
+<meta property="og:title" content="Commissariat Parpaing">
+<meta property="og:description" content="Jeu idle en 3D : bouclez des GAV, traitez les plaintes, signalisez tout le monde et décrochez la prime de la semaine.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#111a38">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bowlby+One&family=Rubik:wght@400;500;700;800&family=Special+Elite&display=swap">
+<style>
+/* Layout : diorama 3D plein cadre à gauche, "main courante" (boutique) à droite ; empilés sur mobile.
+   Look unique assumé : nuit bleu police + gyrophares, papier de PV pour les rapports. */
+:root{
+  color-scheme: dark;
+  --night:#111a38;
+  --navy:#1a2757;
+  --navy-hi:#24377a;
+  --line:#0a1026;
+  --ink:#eef2ff;
+  --ink-dim:#a3b0dd;
+  --gyro-blue:#3d7bff;
+  --gyro-red:#ff4b5c;
+  --gold:#ffc93c;
+  --paper:#fbf4dc;
+  --paper-ink:#2a2833;
+  --ok:#36d68a;
+  --warn:#ffae2b;
+  --bad:#ff4b5c;
+  --sky:#a8dcff;
+  --f-display:"Bowlby One","Arial Black",Impact,sans-serif;
+  --f-body:"Rubik",system-ui,"Segoe UI",sans-serif;
+  --f-type:"Special Elite","Courier New",monospace;
+}
+html,body{height:100%;margin:0}
+[hidden]{display:none!important}
+body{background:var(--night);color:var(--ink);font-family:var(--f-body);overflow:hidden;font-variant-numeric:tabular-nums}
+button{font:inherit;color:inherit}
+button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+
+.app{height:100%;display:grid;grid-template-columns:minmax(0,1fr) 400px}
+.stage{position:relative;min-width:0;min-height:0;overflow:hidden;background:var(--sky)}
+#gl{display:block;width:100%;height:100%;touch-action:none;cursor:grab}
+#gl:active{cursor:grabbing}
+
+/* ---------- HUD ---------- */
+.hud{position:absolute;inset:0;pointer-events:none;padding:14px 16px;display:flex;flex-direction:column;justify-content:space-between;gap:10px}
+.hud-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
+.card{background:color-mix(in srgb,var(--night) 88%,transparent);border:2px solid var(--line);border-radius:14px;box-shadow:0 4px 0 var(--line);padding:10px 14px}
+.cash .lbl,.week .lbl{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-dim);font-weight:700}
+.cash .amt{font-family:var(--f-display);font-size:clamp(24px,4vw,38px);line-height:1.05;color:var(--gold);text-shadow:0 3px 0 #8a5a00}
+.cash .rate{font-size:13px;color:var(--ink-dim)}
+.cash .rate b{color:var(--ink)}
+.buffs{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.buff{font-size:11px;font-weight:700;background:var(--gold);color:#3a2700;border-radius:999px;padding:2px 8px}
+
+.week{min-width:250px;max-width:330px}
+.week-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.week-head .day{font-family:var(--f-display);font-size:16px}
+.bar{height:8px;background:var(--line);border-radius:99px;overflow:hidden;margin:6px 0 8px}
+.bar>i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--gyro-blue),var(--gyro-red));border-radius:99px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;font-size:12.5px}
+.stats div{display:flex;justify-content:space-between;gap:6px}
+.stats span{color:var(--ink-dim)}
+.stats b.ok{color:var(--ok)} .stats b.warn{color:var(--warn)} .stats b.bad{color:var(--bad)}
+.obj{margin-top:8px;font-size:12px;color:var(--ink-dim)}
+.obj .bar{margin:4px 0 0;height:10px}
+.obj .bar>i{background:var(--gold)}
+
+.hud-bottom{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;flex-wrap:wrap}
+.advice{font-weight:700;font-size:13px;display:flex;align-items:center;gap:8px;max-width:420px}
+.advice::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--ok);flex:none;box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 35%,transparent)}
+.advice.warn::before{background:var(--warn);box-shadow:0 0 0 3px color-mix(in srgb,var(--warn) 35%,transparent)}
+.advice.bad::before{background:var(--bad);box-shadow:0 0 0 3px color-mix(in srgb,var(--bad) 35%,transparent);animation:blink .6s steps(2) infinite}
+@keyframes blink{50%{opacity:.2}}
+.tampon{pointer-events:auto;cursor:pointer;font-family:var(--f-display);font-size:18px;letter-spacing:.02em;background:var(--gyro-red);color:#fff;border:3px solid var(--line);border-radius:16px;padding:10px 18px;box-shadow:0 6px 0 var(--line);transition:transform .06s}
+.tampon small{display:block;font-family:var(--f-body);font-size:11px;font-weight:700;opacity:.9}
+.tampon:active{transform:translateY(4px);box-shadow:0 2px 0 var(--line)}
+
+.radio{position:absolute;left:0;right:0;bottom:0;height:26px;background:var(--line);color:var(--gold);font-size:12.5px;display:flex;align-items:center;overflow:hidden;white-space:nowrap}
+.radio b{background:var(--gyro-red);color:#fff;padding:0 10px;height:100%;display:flex;align-items:center;flex:none;font-size:11px;letter-spacing:.1em;z-index:1}
+.radio span{padding-left:100%;animation:ticker 22s linear infinite}
+@keyframes ticker{to{transform:translateX(-100%)}}
+.hud{bottom:26px}
+
+/* étiquettes 3D, textes flottants, croissant doré */
+.tag{position:absolute;left:0;top:0;transform:translate(-50%,-100%);pointer-events:none;background:var(--night);border:2px solid var(--line);color:var(--ink);font-size:11.5px;font-weight:700;padding:3px 8px;border-radius:8px;white-space:nowrap;box-shadow:0 3px 0 var(--line)}
+.tag em{font-style:normal;color:var(--gold)}
+.float{position:absolute;pointer-events:none;font-family:var(--f-display);font-size:16px;color:var(--gold);text-shadow:0 2px 0 var(--line),0 0 6px var(--line);animation:up 1.4s ease-out forwards;white-space:nowrap}
+.float.bad{color:var(--bad)} .float.blue{color:#9cc2ff}
+@keyframes up{from{transform:translate(-50%,0) scale(.8);opacity:1}to{transform:translate(-50%,-60px) scale(1.1);opacity:0}}
+.golden{position:absolute;width:64px;height:64px;padding:0;border:0;background:none;cursor:pointer;pointer-events:auto;filter:drop-shadow(0 0 10px var(--gold));animation:wob 1s ease-in-out infinite}
+@keyframes wob{50%{transform:rotate(14deg) scale(1.1)}}
+
+/* PV de fin de semaine */
+.pv{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-1.2deg);width:min(420px,calc(100% - 32px));background:var(--paper);color:var(--paper-ink);font-family:var(--f-type);padding:20px 22px;border-radius:4px;box-shadow:0 18px 40px rgba(0,0,0,.45);pointer-events:auto;animation:drop .35s cubic-bezier(.2,1.6,.4,1)}
+@keyframes drop{from{transform:translate(-50%,-80%) rotate(-6deg);opacity:0}}
+.pv h2{font-family:var(--f-type);font-size:17px;text-align:center;margin:0 0 2px;letter-spacing:.06em}
+.pv .sub{text-align:center;font-size:12px;margin-bottom:12px}
+.pv dl{display:grid;grid-template-columns:1fr auto;gap:3px 10px;margin:0 0 10px;font-size:14px;border-top:1px dashed var(--paper-ink);border-bottom:1px dashed var(--paper-ink);padding:8px 0}
+.pv dd{margin:0;text-align:right}
+.pv .comment{font-size:13px;font-style:italic;margin:0 0 12px}
+.pv .stamp-row{text-align:center;margin:0 0 10px}
+.pv .stamp{display:inline-block;font-family:var(--f-display);font-size:18px;padding:3px 10px;border:4px solid currentColor;border-radius:8px;transform:rotate(-5deg);opacity:.85;color:#c4142a}
+.stage{container-type:size}
+@container (max-height:480px){
+  .pv{padding:12px 16px;max-height:calc(100% - 20px);overflow-y:auto}
+  .pv .sub,.pv .opt{display:none}
+  .pv h2{margin-bottom:6px;font-size:15px}
+  .pv dl{font-size:12.5px;padding:5px 0;margin-bottom:6px}
+  .pv .comment{font-size:12px;margin-bottom:8px}
+  .pv .stamp{font-size:14px}
+  .pv .stamp-row{margin-bottom:6px}
+  .pv button{padding:7px;font-size:14px}
+}
+.pv .stamp.ok{color:#14803f}
+.pv button{display:block;width:100%;font-family:var(--f-display);font-size:16px;background:var(--gyro-blue);color:#fff;border:3px solid var(--paper-ink);border-radius:10px;padding:10px;cursor:pointer;box-shadow:0 4px 0 var(--paper-ink)}
+
+.toasts{position:absolute;top:12px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;gap:6px;align-items:center;pointer-events:none;width:min(440px,calc(100% - 32px))}
+.toast{background:var(--gold);color:#2b1d00;font-weight:700;font-size:13px;padding:8px 14px;border-radius:10px;border:2px solid var(--line);box-shadow:0 3px 0 var(--line);text-align:center;animation:drop2 .3s ease-out}
+@keyframes drop2{from{transform:translateY(-12px);opacity:0}}
+
+/* ---------- Panneau ---------- */
+.panel{display:flex;flex-direction:column;min-height:0;background:var(--night);border-left:3px solid var(--line)}
+.ph{padding:14px 16px 10px;display:flex;gap:12px;align-items:center;border-bottom:2px solid var(--line)}
+.ph .badge{width:46px;height:46px;flex:none;border-radius:12px;background:#9aa0aa;border:3px solid var(--line);position:relative;box-shadow:inset 0 -6px 0 #7b818c}
+.ph .badge::before,.ph .badge::after{content:"";position:absolute;top:8px;width:10px;height:22px;background:#5d626b;border-radius:2px}
+.ph .badge::before{left:8px} .ph .badge::after{right:8px}
+.ph h1{font-family:var(--f-display);font-size:19px;margin:0;line-height:1.1;text-wrap:balance}
+.ph p{margin:2px 0 0;font-size:12px;color:var(--ink-dim)}
+.tabs{display:flex;gap:4px;padding:10px 16px 0}
+.tabs button{flex:1;background:var(--navy);border:2px solid var(--line);border-bottom:0;border-radius:10px 10px 0 0;padding:8px 4px;font-size:12.5px;font-weight:700;color:var(--ink-dim);cursor:pointer}
+.tabs button[aria-selected="true"]{background:var(--navy-hi);color:var(--ink)}
+.tabs button .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--gold);margin-left:4px;vertical-align:middle}
+.buyx{display:flex;gap:6px;align-items:center;padding:8px 16px;font-size:12px;color:var(--ink-dim);background:var(--navy-hi);border-top:2px solid var(--line)}
+.buyx button{background:var(--navy);border:2px solid var(--line);border-radius:8px;padding:3px 10px;font-weight:700;cursor:pointer;font-size:12px}
+.buyx button[aria-pressed="true"]{background:var(--gold);color:#2b1d00}
+.list{flex:1;min-height:0;overflow-y:auto;padding:12px 16px 20px;display:flex;flex-direction:column;gap:10px;background:var(--navy-hi);scrollbar-width:thin}
+.section-t{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-dim);font-weight:800;margin-top:4px}
+
+.item{display:grid;grid-template-columns:48px minmax(0,1fr) auto;gap:4px 12px;align-items:center;text-align:left;width:100%;background:var(--navy);border:2px solid var(--line);border-radius:14px;padding:10px 12px;cursor:pointer;box-shadow:0 4px 0 var(--line);transition:transform .06s,background .15s}
+.item:hover:not(:disabled){background:#21316b}
+.item:active:not(:disabled){transform:translateY(3px);box-shadow:0 1px 0 var(--line)}
+.item:disabled{cursor:not-allowed;opacity:.55}
+.item.locked{background:repeating-linear-gradient(-45deg,var(--navy) 0 12px,#1d2b60 12px 24px)}
+.item .ic{grid-row:span 2;width:48px;height:48px;border-radius:12px;display:grid;place-items:center;border:2px solid var(--line)}
+.item .ic svg{width:30px;height:30px}
+.item .nm{font-weight:800;font-size:14.5px;min-width:0}
+.item .ds{font-size:12px;color:var(--ink-dim);min-width:0;line-height:1.35}
+.item .ow{grid-row:span 2;text-align:right;font-family:var(--f-display);font-size:22px;line-height:1}
+.item .ow small{display:block;font-family:var(--f-body);font-size:11.5px;font-weight:700;color:var(--gold);margin-top:6px;white-space:nowrap}
+.item.cant .ow small{color:var(--bad)}
+.item .eff{grid-column:2 / 4;font-size:11.5px;color:#cfd8ff;background:var(--line);border-radius:8px;padding:3px 8px;margin-top:2px}
+
+.dossier{background:var(--paper);color:var(--paper-ink);font-family:var(--f-type);border-radius:6px;padding:14px 16px;font-size:13.5px;line-height:1.5}
+.dossier h3{margin:0 0 6px;font-size:15px}
+.dossier dl{display:grid;grid-template-columns:1fr auto;gap:2px 10px;margin:0}
+.dossier dd{margin:0;text-align:right}
+.mini{font-size:12px;color:var(--ink-dim);line-height:1.45}
+.danger{background:#3a1430;border-color:var(--line)}
+
+@media (max-width:860px){
+  .app{grid-template-columns:1fr;grid-template-rows:minmax(0,55%) minmax(0,45%)}
+  .panel{border-left:0;border-top:3px solid var(--line)}
+  .week{min-width:0;max-width:220px;padding:8px 10px}
+  .stats{grid-template-columns:1fr;font-size:11.5px}
+  .stats .opt{display:none}
+  .cash{padding:8px 10px}
+  .tampon{font-size:15px;padding:8px 12px}
+  .advice{font-size:12px;max-width:60%}
+  .ph{padding:10px 16px 8px}
+  .ph .badge{width:36px;height:36px}
+  .ph .badge::before,.ph .badge::after{top:6px;width:7px;height:16px}
+}
+@media (prefers-reduced-motion:reduce){
+  .radio span{animation-duration:60s}
+  .golden,.advice.bad::before{animation:none}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <main class="stage" id="stage">
+    <canvas id="gl" aria-label="Vue 3D du commissariat. Glissez pour tourner, molette pour zoomer, cliquez sur le commissaire Parpaing pour tamponner."></canvas>
+    <div id="tags"></div>
+    <div class="hud">
+      <div class="hud-top">
+        <div class="card cash">
+          <div class="lbl">Caisse du commissariat</div>
+          <div class="amt" id="money">0 €</div>
+          <div class="rate"><b id="rate">0 €</b> / s</div>
+          <div class="buffs" id="buffs"></div>
+        </div>
+        <div class="card week">
+          <div class="week-head"><span class="lbl" id="weekNo">Semaine 1</span><span class="day" id="dayName">Lundi</span></div>
+          <div class="bar"><i id="weekBar"></i></div>
+          <div class="stats">
+            <div><span>Dossiers</span><b id="sDos">0</b></div>
+            <div><span>Signalisation</span><b id="sSig">–</b></div>
+            <div class="opt"><span>GAV</span><b id="sGav">0</b></div>
+            <div class="opt"><span>Plaintes</span><b id="sPla">0</b></div>
+            <div class="opt"><span>Usagers ok</span><b id="sSat">–</b></div>
+            <div class="opt"><span>Relâchés</span><b id="sLost">0</b></div>
+          </div>
+          <div class="obj"><span id="objTxt">Objectif préfectoral : 0 / 10 dossiers</span><div class="bar"><i id="objBar"></i></div></div>
+        </div>
+      </div>
+      <div class="hud-bottom">
+        <div class="card advice" id="advice">Tout roule, commissaire.</div>
+        <button class="tampon" id="tamponBtn" type="button">COUP DE TAMPON<small id="tamponVal">+1 €</small></button>
+      </div>
+    </div>
+    <div class="toasts" id="toasts" aria-live="polite"></div>
+    <div id="pvSlot"></div>
+    <div class="radio"><b>RADIO POLICE</b><span id="radio">Le commissaire Parpaing prend ses fonctions. Le café est froid.</span></div>
+  </main>
+
+  <aside class="panel">
+    <div class="ph">
+      <div class="badge" aria-hidden="true"></div>
+      <div>
+        <h1>Commissaire Parpaing</h1>
+        <p id="tierName">Poste de police de Parpaing-sur-Mer</p>
+      </div>
+    </div>
+    <div class="tabs" role="tablist">
+      <button role="tab" id="tab-staff" aria-selected="true" data-tab="staff">Effectifs</button>
+      <button role="tab" id="tab-up" aria-selected="false" data-tab="up">Matériel</button>
+      <button role="tab" id="tab-build" aria-selected="false" data-tab="build">Bâtiment</button>
+      <button role="tab" id="tab-file" aria-selected="false" data-tab="file">Dossier</button>
+    </div>
+    <div class="buyx" id="buyx">Recruter par
+      <button type="button" data-x="1" aria-pressed="true">×1</button>
+      <button type="button" data-x="10" aria-pressed="false">×10</button>
+      <button type="button" data-x="max" aria-pressed="false">Max</button>
+    </div>
+    <div class="list" id="list" role="tabpanel"></div>
+  </aside>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="data.js"></script>
+<script src="scene-core.js"></script>
+<script src="scene-zones.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
