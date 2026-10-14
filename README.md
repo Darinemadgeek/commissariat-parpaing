@@ -15,7 +15,15 @@ Vous êtes le commissaire divisionnaire Parpaing. Vous partez d'un petit poste d
   - la prime récompense le nombre de dossiers traités (GAV + plaintes) ;
   - elle est doublée si l'objectif du préfet est atteint ;
   - elle est réduite, puis supprimée, si la signalisation PTS ne suit pas.
-- Le bâtiment grandit par paliers, et la mutation permet de repartir de zéro avec des étoiles. La partie n'a pas de fin.
+- Chaque semaine rapporte jusqu'à 3 étoiles : objectif de dossiers atteint, signalisation PTS ≥ 95 %, et un critère propre au commissariat.
+- À 10 étoiles, la **carte des affectations** permet d'être muté au commissariat suivant. Chaque nouveau poste ajoute un problème :
+  1. **Saint-Parpaing-les-Choux** (campagne) : pas de problème particulier, on apprend le métier.
+  2. **Parpaing-Ville** : les GAV ivres vomissent dans les couloirs, il faut une équipe de ménage.
+  3. **Grand-Parpaing** (métropole) : des GAV qui puent des pieds, la PTS a besoin de masques à gaz, sinon elle fait des malaises.
+  4. **Parpaing-la-Défense** (mégapole) : des avocats et le délai légal de 24 h, passé ce délai la GAV est levée.
+  5. **Parpaing-Nord** (cité) : des manifestations qui amènent des vagues entières d'interpellations.
+  6. Puis des secteurs sans fin, avec tous les problèmes à la fois.
+- Le bâtiment grandit par paliers : tour administrative, antenne, hélicoptère, annexe vitrée, statue dorée. La partie n'a pas de fin.
 
 Cliquez sur le commissaire (ou sur « Coup de tampon ») pour accélérer les GAV, et attrapez les croissants dorés pour des bonus. La partie est sauvegardée dans le navigateur.
 
@@ -23,7 +31,11 @@ Cliquez sur le commissaire (ou sur « Coup de tampon ») pour accélérer les GA
 
 - `index.html` : la page, l'interface et les styles
 - `data.js` : l'équilibrage (temps, prix, valeurs) et les textes
-- `scene-core.js` / `scene-zones.js` : la scène 3D (Three.js r128)
-- `game.js` : la simulation, la prime hebdo et la sauvegarde
+- `scene-core.js` : le moteur 3D (Three.js r128), les personnages, les clics
+- `scene-world.js` : les décors (campagne, ville, métropole, mégapole, cité) et la circulation
+- `scene-building.js` : le commissariat en vue coupe
+- `scene-life.js` : les animations et la synchro avec la partie
+- `game-core.js` : la simulation, les problèmes, la prime, les étoiles, la sauvegarde
+- `game-ui.js` : l'interface, le procès-verbal, la carte des affectations
 
 Aucune étape de build : c'est du HTML et du JavaScript statiques, servis par GitHub Pages.

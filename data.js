@@ -15,6 +15,22 @@ window.PD = (function () {
     HALL: 4,
     PRIME_BASE: 0.25,
     OBJ_START: 10,
+    STARS_TO_MOVE: 10,      // étoiles à gagner dans un commissariat pour être muté
+    // problèmes des commissariats suivants
+    DRUNK: 0.3,             // part des GAV ivres (vomi)
+    VOMIT_EVERY: 14,        // s entre deux vomis par GAV ivre
+    VOMIT_MAX: 40,
+    CLEAN_TIME: 4,          // s pour nettoyer une flaque
+    SMELLY: 0.3,            // part des GAV qui puent des pieds
+    UNMASKED: 0.3,          // vitesse PTS sans masque sur une GAV qui pue
+    FAINT_RATE: 0.05,       // risque de malaise par seconde sans masque
+    FAINT_TIME: 15,
+    GAV_LIMIT: 55,          // délai légal (24 h de jeu)
+    LAWYER: 0.25,           // part des GAV avec avocat
+    LAWYER_SLOW: 0.6,
+    MANIF_EVERY: 140,
+    MANIF_LEN: 25,
+    MANIF_MULT: 5,
   };
 
   const C = (bg, fg, path) => ({ bg, svg: `<svg viewBox="0 0 32 32" aria-hidden="true"><g fill="${fg}">${path}</g></svg>` });
@@ -40,7 +56,40 @@ window.PD = (function () {
     plaintes: C('#fbf4dc', '#2a2833', '<rect x="4" y="10" width="24" height="17"/><rect x="7" y="13" width="7" height="6" fill="#e9b949"/><rect x="18" y="13" width="7" height="6" fill="#e9b949"/><rect x="10" y="4" width="12" height="6"/>'),
     hq: C('#3d7bff', '#fff', '<rect x="5" y="8" width="22" height="20"/><rect x="8" y="11" width="4" height="4" fill="#1b2a5c"/><rect x="14" y="11" width="4" height="4" fill="#1b2a5c"/><rect x="20" y="11" width="4" height="4" fill="#1b2a5c"/><rect x="13" y="20" width="6" height="8" fill="#1b2a5c"/><rect x="11" y="3" width="4" height="4" fill="#ff4b5c"/><rect x="17" y="3" width="4" height="4" fill="#3d7bff"/>'),
     mutation: C('#ffc93c', '#3a2700', '<path d="M16 3l3.6 7.6 8.4 1-6.2 5.8 1.6 8.3L16 21.6 8.6 25.7l1.6-8.3L4 11.6l8.4-1z"/>'),
+    clean: C('#8fe3a1', '#14532d', '<path d="M8 14h16l-2 14H10z"/><rect x="7" y="12" width="18" height="3" rx="1"/><rect x="18" y="2" width="2.5" height="12" transform="rotate(20 19 8)"/>'),
+    masks: C('#3a4152', '#cfe3ff', '<path d="M7 12c0-5 18-5 18 0v6c0 4-4 7-9 7s-9-3-9-7z"/><circle cx="12" cy="14" r="2.6" fill="#3a4152"/><circle cx="20" cy="14" r="2.6" fill="#3a4152"/><circle cx="16" cy="25" r="4" fill="#8a93a6"/>'),
+    mop: C('#8fe3a1', '#14532d', '<rect x="15" y="3" width="2.5" height="17"/><path d="M8 20h16l2 8H6z"/>'),
+    deo: C('#c8f0ff', '#1b5c7a', '<rect x="11" y="9" width="10" height="19" rx="3"/><rect x="13" y="4" width="6" height="5"/><path d="M22 5h6M22 8h5M22 11h6" stroke="#1b5c7a" stroke-width="1.6"/>'),
+    parquet: C('#7a1f2b', '#ffd9a0', '<rect x="14.5" y="4" width="3" height="20"/><path d="M5 10h22l-4 7H9z"/><rect x="8" y="25" width="16" height="3"/>'),
+    avocat: C('#1a1a1a', '#ffffff', '<path d="M9 6h14l3 22H6z"/><path d="M14 6l2 6 2-6z" fill="#1a1a1a"/><rect x="15" y="12" width="2" height="9" fill="#1a1a1a"/>'),
+    xxl: C('#ff7b1c', '#3a1a00', '<rect x="4" y="10" width="24" height="14" rx="2"/><path d="M8 14l4 6M12 14l-4 6M15 14l4 6M19 14l-4 6M22 14v6h4" stroke="#fff" stroke-width="1.8" fill="none"/>'),
   };
+
+  // Les commissariats de la carte : chacun ajoute son problème
+  const PROBLEMS = {
+    vomi: { name: 'Vomi dans les couloirs', desc: "Les GAV ivres vomissent dans les couloirs. Plus il y a de flaques, plus tout le monde glisse et ralentit. Il faut une équipe de ménage." },
+    pieds: { name: 'Odeur de pieds', desc: "Certaines GAV puent tellement des pieds que la PTS sans masque à gaz travaille au ralenti et tombe dans les pommes." },
+    delai: { name: 'Délai légal et avocats', desc: "Une GAV dure 24 h maximum. Au-delà, elle est levée et le dossier est perdu. Les avocats font traîner les auditions." },
+    manif: { name: 'Manifestations', desc: "Régulièrement, une manif amène des vagues entières d'interpellations. Il faut de la place en cellule et en salle d'attente." },
+  };
+  const SITES = [
+    { name: 'Saint-Parpaing-les-Choux', biome: 'campagne', kind: 'Campagne', problems: [], style: 'stone', star3: { id: 'sat', label: 'Usagers bien reçus ≥ 90 %' },
+      pitch: 'Un village, trois vaches et un tracteur. Les plaintes parlent de poules volées et de clôtures arrachées.' },
+    { name: 'Parpaing-Ville', biome: 'ville', kind: 'Ville', problems: ['vomi'], style: 'classic', star3: { id: 'clean', label: 'Propreté des couloirs ≥ 90 %' },
+      pitch: 'Les bars ferment à 2 h, les GAV arrivent à 2 h 05. Et certaines vomissent dans les couloirs.' },
+    { name: 'Grand-Parpaing', biome: 'metropole', kind: 'Métropole', problems: ['vomi', 'pieds'], style: 'modern', star3: { id: 'faint', label: 'Aucun malaise à la PTS' },
+      pitch: 'Des gardés à vue qui sentent si fort des pieds que la PTS tombe dans les pommes. Masques à gaz obligatoires.' },
+    { name: 'Parpaing-la-Défense', biome: 'megapole', kind: 'Mégapole', problems: ['vomi', 'pieds', 'delai'], style: 'glass', star3: { id: 'levee', label: 'Aucune GAV levée' },
+      pitch: "Des avocats d'affaires partout. Passé le délai légal, la GAV est levée et le dossier part à la poubelle." },
+    { name: 'Parpaing-Nord', biome: 'cite', kind: 'Mégapole', problems: ['vomi', 'pieds', 'delai', 'manif'], style: 'bunker', star3: { id: 'lost', label: 'Aucun relâché faute de place' },
+      pitch: 'Une manif par jour, minimum. Les interpellations arrivent par cars entiers.' },
+  ];
+  function site(i) {
+    if (i < SITES.length) return SITES[i];
+    const k = i - SITES.length + 1;
+    return { name: `Secteur Parpaing ${k + 1}`, biome: k % 2 ? 'cite' : 'megapole', kind: 'Mégapole', problems: ['vomi', 'pieds', 'delai', 'manif'], style: k % 2 ? 'bunker' : 'glass', hard: k,
+      star3: { id: 'levee', label: 'Aucune GAV levée' }, pitch: 'Tous les problèmes à la fois, en plus gros. Le préfet compte sur vous.' };
+  }
 
   const UNITS = [
     { id: 'patrols', name: 'Patrouille', base: 15, g: 1.17, start: 1, desc: 'Deux collègues, une voiture, un sandwich triangle. Ramène des suspects en GAV.' },
@@ -49,6 +98,8 @@ window.PD = (function () {
     { id: 'pts', name: 'Agent PTS', base: 30, g: 1.16, start: 1, desc: 'Empreintes, photos, ADN. Une GAV non signalisée plombe la prime.' },
     { id: 'acc', name: "Agent d'accueil", base: 20, g: 1.15, start: 1, needs: 'accueil', desc: 'Accueille le public, prend le ticket, garde son calme.' },
     { id: 'pla', name: 'Agent des plaintes', base: 35, g: 1.16, start: 1, needs: 'plaintes', desc: 'Traite les plaintes. Une plainte sur deux donne une piste aux patrouilles.' },
+    { id: 'clean', name: "Agent d'entretien", base: 30, g: 1.15, start: 1, prob: 'vomi', desc: "Serpillière, seau et nerfs d'acier. Nettoie le vomi des couloirs." },
+    { id: 'masks', name: 'Masque à gaz', base: 20, g: 1.13, start: 0, prob: 'pieds', desc: 'Un masque équipe un agent PTS. Sans masque, les GAV qui puent des pieds ralentissent la PTS et provoquent des malaises.' },
   ];
 
   const UPGRADES = [
@@ -63,6 +114,11 @@ window.PD = (function () {
     { id: 'com', name: 'Affiche « Venez porter plainte »', base: 350, g: 3.3, needs: 'accueil', desc: '+30 % de public à l\'accueil' },
     { id: 'beds', name: 'Bancs plus larges', base: 400, g: 5, desc: '+1 place par cellule' },
     { id: 'crois', name: 'Croissants du vendredi', base: 600, g: 3.5, desc: '+15 % sur la prime hebdo' },
+    { id: 'mop', name: 'Serpillière turbo', base: 150, g: 3, prob: 'vomi', desc: '+30 % vitesse de ménage' },
+    { id: 'deo', name: 'Déodorant industriel', base: 300, g: 3.5, prob: 'pieds', desc: '−20 % de GAV qui puent des pieds' },
+    { id: 'parquet', name: 'Prolongation du parquet', base: 400, g: 3.4, prob: 'delai', desc: '+25 % de délai légal de GAV' },
+    { id: 'avocat', name: 'Café offert aux avocats', base: 350, g: 3.2, prob: 'delai', desc: 'Les avocats font moins traîner les auditions' },
+    { id: 'xxl', name: "Salle d'attente XXL", base: 500, g: 3.5, prob: 'manif', desc: "+10 places d'attente pour les suspects" },
   ];
 
   const BUILDINGS = [
@@ -72,12 +128,12 @@ window.PD = (function () {
 
   const TIERS = [
     { name: 'Poste de police', cost: 0 },
-    { name: 'Commissariat de quartier', cost: 1500 },
+    { name: 'Commissariat', cost: 1500 },
     { name: 'Commissariat central', cost: 20000 },
     { name: 'Hôtel de police', cost: 250000 },
-    { name: 'Direction départementale', cost: 3e6 },
-    { name: 'Cité Le Grand Parpaing', cost: 4e7 },
-    { name: 'Quai des Orfèvres-sur-Mer', cost: 6e8 },
+    { name: 'Direction territoriale', cost: 3e6 },
+    { name: 'Préfecture de police', cost: 4e7 },
+    { name: 'Quai des Orfèvres bis', cost: 6e8 },
   ];
   function tier(i) {
     if (i < TIERS.length) return TIERS[i];
@@ -105,6 +161,14 @@ window.PD = (function () {
     "La cellule 1 est très demandée, elle a vue sur la mer.",
     "Note de service : interdiction de tamponner les collègues.",
   ];
+
+  const RADIO_BY = {
+    campagne: ["Plainte déposée contre une vache qui a mangé le panneau STOP.", "Course-poursuite à 25 km/h derrière un tracteur volé.", "Le garde champêtre demande si le commissariat a du wifi.", "Vol de 40 poules. Le renard a un alibi."],
+    ville: ["Le couloir 2 a été repeint par un gardé à vue. Couleur : kebab.", "L'équipe ménage réclame une prime de bravoure.", "Les bars ferment. Préparez les serpillières."],
+    metropole: ["La PTS demande si les masques à gaz couvrent aussi les chaussettes.", "Un gardé à vue a retiré ses chaussures. Évacuation du 1er étage.", "Record battu : odeur détectée depuis le parking."],
+    megapole: ["Un avocat a demandé la nullité parce que le café était tiède.", "Le parquet rappelle que 24 h, c'est 24 h.", "Trois avocats pour un vol de trottinette."],
+    cite: ["Manifestation devant le commissariat. Les pancartes sont bien écrites.", "Le car de CRS est coincé dans un rond-point.", "Une manif contre les manifs est annoncée pour demain."],
+  };
 
   const GOLDEN = [
     { id: 'prefet', label: 'Visite du préfet : recettes ×5', dur: 30, msg: 'Le préfet passe ! Tout le monde fait semblant de bosser. Recettes ×5 pendant 30 s.' },
@@ -138,5 +202,5 @@ window.PD = (function () {
   const eur = (n, dec) => fmt(n, dec) + ' €';
   const pick = a => a[Math.floor(Math.random() * a.length)];
 
-  return { T, ICONS, UNITS, UPGRADES, BUILDINGS, tier, RADIO, GOLDEN, PRIME_TALK, fmt, eur, pick };
+  return { T, ICONS, UNITS, UPGRADES, BUILDINGS, tier, RADIO, RADIO_BY, GOLDEN, PRIME_TALK, PROBLEMS, SITES, site, fmt, eur, pick };
 })();

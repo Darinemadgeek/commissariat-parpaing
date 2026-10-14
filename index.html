@@ -70,14 +70,46 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .obj{margin-top:8px;font-size:12px;color:var(--ink-dim)}
 .obj .bar{margin:4px 0 0;height:10px}
 .obj .bar>i{background:var(--gold)}
+.probs{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;font-size:12.5px;margin-top:6px;padding-top:6px;border-top:1px dashed var(--navy-hi)}
+.probs div{display:flex;justify-content:space-between;gap:6px}
+.probs span{color:var(--ink-dim)}
+.probs b.ok{color:var(--ok)} .probs b.warn{color:var(--warn)} .probs b.bad{color:var(--bad)}
+.wstars{display:flex;gap:4px;flex-wrap:wrap;margin-top:8px}
+.wstars span{font-size:11px;font-weight:700;padding:2px 7px;border-radius:99px;background:var(--line);color:var(--ink-dim)}
+.wstars span.on{background:var(--gold);color:#3a2700}
+.wstars span::before{content:"★ "}
 
-.hud-bottom{display:flex;justify-content:space-between;align-items:flex-end;gap:10px;flex-wrap:wrap}
-.advice{font-weight:700;font-size:13px;display:flex;align-items:center;gap:8px;max-width:420px}
-.advice::before{content:"";width:10px;height:10px;border-radius:50%;background:var(--ok);flex:none;box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 35%,transparent)}
+/* carte des affectations */
+.mapov{position:fixed;inset:0;z-index:20;background:rgba(6,10,26,.72);display:grid;place-items:center;padding:16px}
+.mapcard{width:min(920px,100%);max-height:100%;overflow:auto;background:var(--paper);color:var(--paper-ink);border-radius:10px;border:3px solid var(--line);box-shadow:0 20px 50px rgba(0,0,0,.5);display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr)}
+.mapcard header{grid-column:1 / -1;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 18px;border-bottom:2px dashed var(--paper-ink)}
+.mapcard h2{font-family:var(--f-display);font-size:20px;margin:0}
+.mapcard header button{font:700 13px var(--f-body);background:var(--paper-ink);color:var(--paper);border:0;border-radius:8px;padding:8px 12px;cursor:pointer}
+.mapsvg{display:block;width:100%;height:auto;min-width:0}
+.mapsvg .node{cursor:pointer}
+.mapsvg .node:focus-visible circle.ring{stroke:var(--gyro-red)}
+.mapinfo{padding:16px 18px;font-family:var(--f-type);font-size:13.5px;line-height:1.5;border-left:2px dashed var(--paper-ink);min-width:0}
+.mapinfo h3{font-family:var(--f-display);font-size:17px;margin:0 0 2px}
+.mapinfo .kind{font-size:12px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px}
+.mapinfo .pb{background:#fff;border:2px solid var(--paper-ink);border-radius:8px;padding:8px 10px;margin:8px 0}
+.mapinfo .pb b{display:block;font-family:var(--f-body)}
+.mapinfo .go{display:block;width:100%;margin-top:12px;font-family:var(--f-display);font-size:15px;background:var(--gyro-blue);color:#fff;border:3px solid var(--paper-ink);border-radius:10px;padding:10px;cursor:pointer;box-shadow:0 4px 0 var(--paper-ink)}
+.mapinfo .go:disabled{background:#9aa0aa;cursor:not-allowed}
+.mapinfo .go.arm{background:var(--gyro-red)}
+.ph .mapbtn{margin-left:auto;flex:none;font:800 12.5px var(--f-body);background:var(--gold);color:#3a2700;border:2px solid var(--line);border-radius:10px;padding:8px 10px;cursor:pointer;box-shadow:0 3px 0 var(--line)}
+.ph .mapbtn.ready{animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{50%{transform:scale(1.08)}}
+.ph>div{min-width:0}
+@media (max-width:700px){.mapcard{grid-template-columns:1fr}.mapinfo{border-left:0;border-top:2px dashed var(--paper-ink)}}
+
+/* bas du HUD : le tampon a une place fixe, la bulle de conseil ne peut plus le pousser */
+.hud-bottom{position:relative;min-height:64px}
+.advice{position:absolute;left:0;bottom:0;max-width:min(440px,calc(100% - 190px));padding-left:30px;font-weight:700;font-size:13px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.advice::before{content:"";position:absolute;left:12px;top:50%;margin-top:-5px;width:10px;height:10px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 35%,transparent)}
 .advice.warn::before{background:var(--warn);box-shadow:0 0 0 3px color-mix(in srgb,var(--warn) 35%,transparent)}
 .advice.bad::before{background:var(--bad);box-shadow:0 0 0 3px color-mix(in srgb,var(--bad) 35%,transparent);animation:blink .6s steps(2) infinite}
 @keyframes blink{50%{opacity:.2}}
-.tampon{pointer-events:auto;cursor:pointer;font-family:var(--f-display);font-size:18px;letter-spacing:.02em;background:var(--gyro-red);color:#fff;border:3px solid var(--line);border-radius:16px;padding:10px 18px;box-shadow:0 6px 0 var(--line);transition:transform .06s}
+.tampon{position:absolute;right:0;bottom:0;width:176px;pointer-events:auto;cursor:pointer;font-family:var(--f-display);font-size:18px;letter-spacing:.02em;background:var(--gyro-red);color:#fff;border:3px solid var(--line);border-radius:16px;padding:10px 18px;box-shadow:0 6px 0 var(--line);transition:transform .06s}
 .tampon small{display:block;font-family:var(--f-body);font-size:11px;font-weight:700;opacity:.9}
 .tampon:active{transform:translateY(4px);box-shadow:0 2px 0 var(--line)}
 
@@ -170,8 +202,10 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
   .stats{grid-template-columns:1fr;font-size:11.5px}
   .stats .opt{display:none}
   .cash{padding:8px 10px}
-  .tampon{font-size:15px;padding:8px 12px}
-  .advice{font-size:12px;max-width:60%}
+  .tampon{font-size:15px;padding:8px 10px;width:142px}
+  .hud-bottom{min-height:58px}
+  .advice{font-size:12px;max-width:calc(100% - 154px);padding:7px 10px 7px 28px}
+  .wstars,.probs{display:none}
   .ph{padding:10px 16px 8px}
   .ph .badge{width:36px;height:36px}
   .ph .badge::before,.ph .badge::after{top:6px;width:7px;height:16px}
@@ -207,6 +241,8 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
             <div class="opt"><span>Relâchés</span><b id="sLost">0</b></div>
           </div>
           <div class="obj"><span id="objTxt">Objectif préfectoral : 0 / 10 dossiers</span><div class="bar"><i id="objBar"></i></div></div>
+          <div class="probs" id="probs" hidden></div>
+          <div class="wstars" id="wStars"></div>
         </div>
       </div>
       <div class="hud-bottom">
@@ -224,8 +260,9 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
       <div class="badge" aria-hidden="true"></div>
       <div>
         <h1>Commissaire Parpaing</h1>
-        <p id="tierName">Poste de police de Parpaing-sur-Mer</p>
+        <p id="tierName">Poste de police</p>
       </div>
+      <button class="mapbtn" id="mapBtn" type="button">Carte · <span id="cStars">★ 0/10</span></button>
     </div>
     <div class="tabs" role="tablist">
       <button role="tab" id="tab-staff" aria-selected="true" data-tab="staff">Effectifs</button>
@@ -246,7 +283,11 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 <script src="data.js"></script>
 <script src="scene-core.js"></script>
-<script src="scene-zones.js"></script>
-<script src="game.js"></script>
+<div class="mapov" id="mapOv" hidden role="dialog" aria-label="Carte des affectations"></div>
+<script src="scene-world.js"></script>
+<script src="scene-building.js"></script>
+<script src="scene-life.js"></script>
+<script src="game-core.js"></script>
+<script src="game-ui.js"></script>
 </body>
 </html>
