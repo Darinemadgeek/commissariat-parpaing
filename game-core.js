@@ -72,7 +72,8 @@ window.GM = (function () {
     const q = r === null ? 1 : r >= 0.95 ? 1 : r >= 0.85 ? 0.6 : r >= 0.7 ? 0.3 : 0;
     const sat = s === null ? 1 : 0.5 + 0.5 * s;
     const dossiers = w.gav + w.pla, quota = st[0];
-    const prime = w.earned * T.PRIME_BASE * q * sat * (quota ? 2 : 1) * (1 + 0.25 * n) * (1 + 0.15 * G.up.crois);
+    // pas de jauge pleine, pas de prime ; la qualité PTS et les usagers en modulent le montant
+    const prime = quota ? w.earned * T.PRIME_BASE * 2 * q * sat * (1 + 0.25 * n) * (1 + 0.15 * G.up.crois) : 0;
     return { prime, q, sat, quota, dossiers, r, s, st, n };
   }
 

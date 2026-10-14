@@ -70,6 +70,10 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .obj{margin-top:8px;font-size:12px;color:var(--ink-dim)}
 .obj .bar{margin:4px 0 0;height:10px}
 .obj .bar>i{background:var(--gold)}
+.obj .bar>i.full{background:var(--ok)}
+.obj .bar>i.void{background:var(--bad)}
+.obj.full span{color:var(--ok);font-weight:700}
+.obj.void span{color:var(--bad);font-weight:700}
 .probs{display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;font-size:12.5px;margin-top:6px;padding-top:6px;border-top:1px dashed var(--navy-hi)}
 .probs div{display:flex;justify-content:space-between;gap:6px}
 .probs span{color:var(--ink-dim)}

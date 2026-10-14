@@ -42,7 +42,7 @@
         <dt class="opt">Recettes de la semaine</dt><dd class="opt">${eur(p.earned)}</dd>
         <dt><b>Prime</b></dt><dd><b>${eur(p.prime)}</b></dd>
       </dl>
-      <p class="comment">« ${talk} » +${p.n} étoile${p.n > 1 ? 's' : ''} pour votre dossier de mutation (${Math.min(G.cstars, T.STARS_TO_MOVE)}/${T.STARS_TO_MOVE}).</p>
+      <p class="comment">« ${talk} »${p.quota ? (ok ? '' : ' Signalisation PTS sous 70 % : pas de prime.') : ' Objectif de dossiers manqué : pas de prime.'} +${p.n} étoile${p.n > 1 ? 's' : ''} pour votre dossier de mutation (${Math.min(G.cstars, T.STARS_TO_MOVE)}/${T.STARS_TO_MOVE}).</p>
       <button type="button" id="pvBtn">${ok ? 'Encaisser la prime' : 'Classer sans suite'}</button>
     </div>`;
     $('pvBtn').onclick = collect;
@@ -148,7 +148,7 @@
       }, true);
       const h = GM.here();
       if (h.problems.length) addEl('p', 'mini', '<b>Problèmes de ce commissariat.</b><br>' + h.problems.map(k => `<b>${PROBLEMS[k].name} :</b> ${PROBLEMS[k].desc}`).join('<br>'));
-      addEl('p', 'mini', `<b>Étoiles de la semaine.</b> 1 étoile si l'objectif de dossiers (GAV + plaintes) est atteint, 1 si la signalisation PTS atteint 95 %, 1 pour le critère local : ${h.star3.label.toLowerCase()}. À ${T.STARS_TO_MOVE} étoiles, vous pouvez demander votre mutation sur la carte.<br><br><b>Prime.</b> 25 % des recettes de la semaine, réduite si la PTS ne suit pas (rien sous 70 %), doublée si l'objectif est atteint, +25 % par étoile.<br><br><b>Astuces.</b> Les plaintes donnent des pistes : avec des pistes, les patrouilles vont deux fois plus vite. Un clic sur le commissaire ou sur le tampon accélère la GAV la plus ancienne. Attrapez les croissants dorés.`);
+      addEl('p', 'mini', `<b>Étoiles de la semaine.</b> 1 étoile si l'objectif de dossiers (GAV + plaintes) est atteint, 1 si la signalisation PTS atteint 95 %, 1 pour le critère local : ${h.star3.label.toLowerCase()}. À ${T.STARS_TO_MOVE} étoiles, vous pouvez demander votre mutation sur la carte.<br><br><b>Prime.</b> Versée uniquement si la jauge d'objectif est pleine : 50 % des recettes de la semaine, réduite si la PTS ne suit pas (rien sous 70 %) ou si des usagers repartent fâchés, +25 % par étoile. Objectif manqué : il baisse un peu la semaine suivante.<br><br><b>Astuces.</b> Les plaintes donnent des pistes : avec des pistes, les patrouilles vont deux fois plus vite. Un clic sur le commissaire ou sur le tampon accélère la GAV la plus ancienne. Attrapez les croissants dorés.`);
     }
     list.scrollTop = scroll;
   }
@@ -282,8 +282,12 @@
     $('sGav').textContent = fmt(W.gav); $('sPla').textContent = fmt(W.pla);
     const sat = $('sSat'); sat.textContent = pct(s); cls(sat, s, 0.9, 0.6);
     const lost = $('sLost'); lost.textContent = fmt(W.lost); lost.className = W.lost ? 'bad' : '';
-    $('objTxt').textContent = `Objectif préfectoral : ${fmt(dos)} / ${fmt(G.objective)} dossiers`;
+    // la jauge dit exactement si la prime tombera
+    const pc = GM.primeCalc(W), full = dos >= G.objective, state = !full ? '' : pc.prime > 0 ? 'full' : 'void';
+    $('objTxt').textContent = !full ? `Objectif préfectoral : ${fmt(dos)} / ${fmt(G.objective)} dossiers · prime si la jauge est pleine`
+      : pc.prime > 0 ? `Objectif atteint ✔ · prime estimée ${eur(pc.prime)}` : 'Objectif atteint, mais signalisation PTS sous 70 % : pas de prime';
     $('objBar').style.width = Math.min(100, (dos / G.objective) * 100) + '%';
+    $('objBar').className = state; $('objTxt').parentNode.className = 'obj ' + state;
     // problèmes du lieu
     const rows = [];
     if (GM.has('vomi')) { const p = GM.propre(); rows.push(['Propreté', pct(p), p >= 0.9 ? 'ok' : p >= 0.6 ? 'warn' : 'bad']); }

@@ -12,9 +12,9 @@ Vous êtes le commissaire divisionnaire Parpaing. Vous partez d'un petit poste d
 - La **PTS** (police technique et scientifique) doit signaliser chaque personne avant la fin de sa GAV.
 - L'**accueil** reçoit le public, et le **bureau des plaintes** traite les plaintes. Une plainte sur deux donne une piste, et avec des pistes les patrouilles interpellent deux fois plus vite.
 - Chaque fin de semaine, un procès-verbal fixe la **prime** :
-  - la prime récompense le nombre de dossiers traités (GAV + plaintes) ;
-  - elle est doublée si l'objectif du préfet est atteint ;
-  - elle est réduite, puis supprimée, si la signalisation PTS ne suit pas.
+  - elle n'est versée que si la jauge d'objectif est pleine (dossiers traités : GAV + plaintes) ;
+  - son montant est réduit, puis supprimé, si la signalisation PTS ne suit pas ;
+  - l'objectif monte quand il est atteint et baisse un peu quand il est manqué.
 - Chaque semaine rapporte jusqu'à 3 étoiles : objectif de dossiers atteint, signalisation PTS ≥ 95 %, et un critère propre au commissariat.
 - À 10 étoiles, la **carte des affectations** permet d'être muté au commissariat suivant. Chaque nouveau poste ajoute un problème :
   1. **Saint-Parpaing-les-Choux** (campagne) : pas de problème particulier, on apprend le métier.

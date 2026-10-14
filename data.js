@@ -14,7 +14,7 @@ window.PD = (function () {
     PISTE_MAX: 25,
     HALL: 4,
     PRIME_BASE: 0.25,
-    OBJ_START: 10,
+    OBJ_START: 8,
     STARS_TO_MOVE: 10,      // étoiles à gagner dans un commissariat pour être muté
     // problèmes des commissariats suivants
     DRUNK: 0.3,             // part des GAV ivres (vomi)
