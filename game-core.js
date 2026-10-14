@@ -32,6 +32,7 @@ window.GM = (function () {
   const buffOn = id => G.buffs.some(b => b.id === id);
   const valMult = () => Math.pow(1.6, G.tier) * (1 + 0.3 * G.up.lrp) * (1 + 0.1 * G.stars) * (1 + 0.5 * G.galons) * Math.pow(2, here().hard || 0) * (buffOn('prefet') ? 5 : 1);
   const turbo = () => (buffOn('turbo') ? 3 : 1);
+  const maxime = () => (buffOn('maxime') ? 1.5 : 1); // Maxime a fait ses dossiers parquet
   const cellCap = () => 2 + G.up.beds;
   const capacity = () => G.n.cells * cellCap();
   const hallCap = () => T.HALL + 4 * G.up.hall + 10 * G.up.xxl;
@@ -129,7 +130,7 @@ window.GM = (function () {
     G.ptsDown = G.ptsDown.map(x => x - dt).filter(x => x > 0);
     const avail = Math.max(0, G.n.pts - G.ptsDown.length);
     let masks = Math.min(G.n.masks, avail), pb = 0;
-    const pSp = ((1 + 0.3 * G.up.bio) * turbo() * sl) / T.PTS_TIME;
+    const pSp = ((1 + 0.3 * G.up.bio) * turbo() * maxime() * sl) / T.PTS_TIME;
     const work = d => {
       let sp = pSp;
       if (d.smelly) {
@@ -269,7 +270,7 @@ window.GM = (function () {
   }
   // débits par minute : ce que les enquêteurs bouclent, ce que la PTS peut signaliser
   const invPerMin = () => (60 * G.n.inv * (1 + 0.25 * G.up.coffee) * turbo() * slip()) / T.ENQ_TIME;
-  const ptsPerMin = () => (60 * Math.max(0, G.n.pts - G.ptsDown.length) * (1 + 0.3 * G.up.bio) * turbo() * slip()) / T.PTS_TIME;
+  const ptsPerMin = () => (60 * Math.max(0, G.n.pts - G.ptsDown.length) * (1 + 0.3 * G.up.bio) * turbo() * maxime() * slip()) / T.PTS_TIME;
   const rate = () => earnedLog.reduce((s, e) => s + e[1], 0) / Math.min(20, Math.max(5, perf));
 
   // ---------- sauvegarde ----------
