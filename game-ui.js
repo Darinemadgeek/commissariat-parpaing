@@ -264,7 +264,7 @@
     if (!golden) return;
     const g = pick(PD.GOLDEN);
     if (g.id === 'cash') { const v = Math.max(50, GM.rate() * 90 + G.money * 0.05); GM.earn(v); toast(g.msg + ' +' + eur(v)); }
-    else { GM.addBuff(g.id, g.dur, g.label); toast(g.msg); }
+    else { GM.addBuff(g.id, g.dur, g.label, g.malus); toast(g.msg); }
     killGolden();
   }
   function killGolden() { if (golden) golden.el.remove(); golden = null; G.goldenIn = 60 + Math.random() * 70; }
@@ -348,7 +348,7 @@
     $('cStars').textContent = `★ ${Math.min(G.cstars, T.STARS_TO_MOVE)}/${T.STARS_TO_MOVE}`;
     $('mapBtn').classList.toggle('ready', GM.canMove());
     $('tierName').textContent = `${tier(G.tier).name} · ${h.name}`;
-    $('buffs').innerHTML = G.buffs.map(b => `<span class="buff">${b.label} · ${Math.ceil(b.until - GM.perf())} s</span>`).join('');
+    $('buffs').innerHTML = G.buffs.map(b => `<span class="buff${b.malus ? ' malus' : ''}">${b.label} · ${Math.ceil(b.until - GM.perf())} s</span>`).join('');
     advice(r, s);
     const tg = S.tags;
     tg.hq.set(`${tier(G.tier).name}`);

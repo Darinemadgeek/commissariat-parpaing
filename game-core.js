@@ -31,7 +31,8 @@ window.GM = (function () {
   const hardK = () => 1 + 0.25 * (here().hard || 0);
   const buffOn = id => G.buffs.some(b => b.id === id);
   const valMult = () => Math.pow(1.6, G.tier) * (1 + 0.3 * G.up.lrp) * (1 + 0.1 * G.stars) * (1 + 0.5 * G.galons) * Math.pow(2, here().hard || 0) * (buffOn('prefet') ? 5 : 1);
-  const turbo = () => (buffOn('turbo') ? 3 : 1);
+  const sabotage = () => (buffOn('laurine') ? 0.95 : 1); // Laurine sabote les locaux
+  const turbo = () => (buffOn('turbo') ? 3 : 1) * sabotage();
   const maxime = () => (buffOn('maxime') ? 1.5 : 1); // Maxime a fait ses dossiers parquet
   const cellCap = () => 2 + G.up.beds;
   const capacity = () => G.n.cells * cellCap();
@@ -107,7 +108,7 @@ window.GM = (function () {
     }
 
     // Patrouilles (deux fois plus vite avec des pistes)
-    const pRate = (G.n.patrols / T.PATROL_TIME) * (1 + 0.25 * G.up.gyro) * (buffOn('bac') ? 4 : 1) * (G.pistes > 0 ? 2 : 1) * manif;
+    const pRate = (G.n.patrols / T.PATROL_TIME) * (1 + 0.25 * G.up.gyro) * (buffOn('bac') ? 4 : 1) * (G.pistes > 0 ? 2 : 1) * manif * sabotage();
     G.acc.patrol += pRate * dt;
     while (G.acc.patrol >= 1) {
       G.acc.patrol -= 1;
@@ -300,7 +301,7 @@ window.GM = (function () {
     G, T, ui, here, has, step, collect, weekStars, primeCalc, sigRate, satRate, cleanRate, propre, gavLimit,
     gavValue, plaValue, tamponValue, capacity, hallCap, cellCap, unitCost, upCost, bulk, unitOn, upOn,
     buyUnit, buyUp, build, upTier, canMove, move, tampon, rate, save, load,
-    perf: () => perf, lost: () => lostFlash > 0, buffOn, addBuff: (id, dur, label) => G.buffs.push({ id, until: perf + dur, label }),
+    perf: () => perf, lost: () => lostFlash > 0, buffOn, addBuff: (id, dur, label, malus) => G.buffs.push({ id, until: perf + dur, label, malus: !!malus }),
     earn, slip, invPerMin, ptsPerMin,
   };
 })();
