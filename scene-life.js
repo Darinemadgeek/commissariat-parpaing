@@ -62,8 +62,10 @@
       R.cells.forEach((c, i) => {
         c.visible = i < v.cells;
         const n = c.visible ? Math.min(v.cellCap, rem) : 0; rem -= n;
-        c.userData.figs.forEach((f, j) => { f.visible = j < Math.min(n, 4); });
-        c.userData.stink.visible = n > 0 && stink > 0; if (n > 0 && stink > 0) stink -= n;
+        c.userData.figs.forEach((f, j) => { // les gardés à vue qui puent des pieds dégagent une fumée verte
+          f.visible = j < Math.min(n, 4);
+          f.userData.puffs.visible = f.visible && stink > 0; if (f.userData.puffs.visible) stink--;
+        });
         if (n > 0 && vips > 0) { c.userData.vip.visible = true; c.userData.figs[0].visible = false; vips--; }
       });
       R.ext.visible = v.cells > 12;
@@ -139,9 +141,9 @@
       const [a, b] = f.userData.lane, s = Math.sin(t * 0.22 + f.userData.ph);
       f.position.x = a + (b - a) * (0.5 + 0.5 * s);
       f.rotation.y = Math.cos(t * 0.22 + f.userData.ph) > 0 ? Math.PI / 2 : -Math.PI / 2;
-      f.children[f.children.length - 1].rotation.y = Math.sin(t * 6) * 0.5;
+      f.userData.swing.rotation.y = Math.sin(t * 6) * 0.35;
     });
-    R.cells.forEach((c, i) => { const s = c.userData.stink; if (s.visible) s.children.forEach((b, k) => { b.position.y = ((t * 0.5 + k * 0.33 + i * 0.1) % 1) * 1.2; b.material.opacity = 0.5 * (1 - b.position.y / 1.2); }); });
+    S.people.puffs(R.cells.flatMap(c => (c.visible ? c.userData.figs : [])), t);
     if (manifOn) R.demo.forEach((f, i) => { f.position.y = Math.abs(Math.sin(t * 5 + i)) * 0.3; });
     R.papa.forEach((f, i) => { if (f.visible) f.userData.flash.visible = Math.sin(t * 9 + i * 2.3) > 0.93; });
     if (R.colis.visible) R.colisLamp.visible = Math.floor(t * 4) % 2 === 0;

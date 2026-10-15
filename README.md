@@ -46,7 +46,8 @@ La partie est sauvegardée automatiquement dans le navigateur.
 
 - `index.html` : la page, l'écran d'accueil, l'interface et les styles
 - `data.js` : l'équilibrage (temps, prix, effets par niveau), les commissariats, les événements et les textes
-- `scene-core.js` : le moteur 3D (Three.js r128), les personnages, les clics
+- `scene-core.js` : le moteur 3D (Three.js r128), les étiquettes, les clics
+- `scene-people.js` : les personnages (modèle façon Settlers, tirés au hasard par rôle puis fusionnés en un seul maillage)
 - `scene-world.js` / `scene-world2.js` : les décors (campagne, villes, plage, montagne, aéroport, festival, ministère) et la circulation
 - `scene-building.js` : le commissariat en vue coupe
 - `scene-life.js` : les animations et la synchro avec la partie

@@ -1,4 +1,4 @@
-// Scène 3D : moteur, outils de modélisation low-poly, personnages, étiquettes et clics.
+// Scène 3D : moteur, outils de modélisation low-poly, étiquettes et clics.
 window.S = (function () {
   const stage = document.getElementById('stage');
   const canvas = document.getElementById('gl');
@@ -101,43 +101,7 @@ window.S = (function () {
   const rnd = a => a[Math.floor(Math.random() * a.length)];
   const rr = (a, b) => a + Math.random() * (b - a);
 
-  const SKIN = ['#f1c27d', '#e0ac69', '#c68642', '#8d5524', '#ffdbac'];
-  const CIV = ['#e85d75', '#5bc0eb', '#9bc53d', '#fde74c', '#c879ff', '#ff9f1c', '#2ec4b6'];
-  // Petit bonhomme : suspect | inv | pts | cop | civ | acc | pla | clean | demo
-  function figure(kind) {
-    const g = new THREE.Group();
-    const bodyC = { suspect: '#ff7b1c', inv: '#a8743f', pts: '#f4f6fb', cop: '#22336e', acc: '#7fb0ff', pla: '#2c3f86', clean: '#3fae5a', avocat: '#1a1a1a', interp: '#ffd23f', vip: '#ffc93c', papa: '#3a3a3a' }[kind] || rnd(CIV);
-    if (kind === 'avocat') { box(g, 0.2, 0.24, 0.06, '#ffffff', 0, 0.46, 0.27); box(g, 0.42, 0.3, 0.1, '#5a3a22', 0.36, 0.12, 0); }
-    if (kind === 'interp') { box(g, 0.5, 0.06, 0.06, '#1d2433', 0, 1.14, 0); box(g, 0.08, 0.18, 0.12, '#1d2433', -0.24, 0.92, 0); box(g, 0.08, 0.18, 0.12, '#1d2433', 0.24, 0.92, 0); }
-    if (kind === 'vip') { box(g, 0.36, 0.08, 0.06, '#111111', 0, 0.96, 0.2); box(g, 0.3, 0.05, 0.05, '#fff2a8', 0, 0.62, 0.25); }
-    if (kind === 'papa') { box(g, 0.3, 0.22, 0.2, '#111522', 0, 0.72, 0.3); const fl = box(g, 0.14, 0.08, 0.08, mat('#ffffff', { emissive: '#ffffff', emissiveIntensity: 2 }), 0, 0.88, 0.38); fl.visible = false; g.userData.flash = fl; }
-    cyl(g, 0.24, 0.32, 0.72, 7, bodyC, 0, 0, 0);
-    ball(g, 0.22, rnd(SKIN), 0, 0.92, 0, 1);
-    if (kind === 'cop' || kind === 'acc') {
-      cyl(g, 0.2, 0.2, 0.12, 8, '#1b2a5c', 0, 1.06, 0);
-      box(g, 0.3, 0.03, 0.14, '#111522', 0, 1.06, 0.18);
-    } else if (kind === 'pts') {
-      ball(g, 0.25, '#ffffff', 0, 0.98, -0.03, 1);
-      const mask = new THREE.Group(); g.add(mask);
-      box(mask, 0.36, 0.2, 0.12, '#2b3245', 0, 0.82, 0.18);
-      cyl(mask, 0.09, 0.09, 0.12, 8, '#8a93a6', 0, 0.8, 0.28).rotation.x = Math.PI / 2;
-      box(mask, 0.3, 0.1, 0.06, '#9fd3ff', 0, 0.94, 0.2);
-      mask.visible = false; g.userData.mask = mask;
-    } else if (kind === 'inv') {
-      cyl(g, 0.3, 0.3, 0.03, 8, '#4a3222', 0, 1.06, 0);
-      cyl(g, 0.17, 0.2, 0.15, 8, '#4a3222', 0, 1.08, 0);
-    } else if (kind === 'suspect') {
-      box(g, 0.34, 0.06, 0.06, '#222', 0, 0.86, 0.2);
-    } else if (kind === 'clean') {
-      cyl(g, 0.22, 0.22, 0.1, 8, '#1f6b35', 0, 1.06, 0);
-      cyl(g, 0.03, 0.03, 1.3, 5, '#b07a45', 0.3, 0.05, 0.25).rotation.z = 0.25;
-      box(g, 0.34, 0.08, 0.16, '#d8f5df', 0.48, 0.04, 0.25);
-    } else if (kind === 'demo') {
-      cyl(g, 0.025, 0.025, 1.2, 5, '#b07a45', 0.32, 0.4, 0);
-      box(g, 0.7, 0.45, 0.04, rnd(['#ffffff', '#ffe066', '#ffb3c1']), 0.32, 1.45, 0);
-    }
-    return g;
-  }
+  // les bonshommes sont dans scene-people.js (S.figure)
 
   // ---------- étiquettes, projection, clics ----------
   const tags = [];
@@ -208,5 +172,5 @@ window.S = (function () {
   }
   requestAnimationFrame(loop);
 
-  return { THREE, scene, camera, controls, renderer, low: LOW, mat, geo, mesh, box, cyl, ball, flat, sign, figure, rnd, rr, addTag, project, pickables, setSky, onFrame: f => frames.push(f), stage };
+  return { THREE, scene, camera, controls, renderer, low: LOW, mat, geo, mesh, box, cyl, ball, flat, sign, rnd, rr, addTag, project, pickables, setSky, onFrame: f => frames.push(f), stage };
 })();

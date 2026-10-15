@@ -40,11 +40,8 @@
     box(g, 1.9, 0.38, 0.45, '#9b7b5a', 0, Y, -0.75);
     const figs = [];
     for (let j = 0; j < 4; j++) { const f = seat(g, 'suspect', -0.55 + (j % 2) * 1.1 + (j > 1 ? 0.25 : 0), j > 1 ? 0.35 : -0.6, (Math.random() - 0.5) * 0.8); f.visible = false; figs.push(f); }
-    const stink = new THREE.Group(); g.add(stink); stink.position.y = Y + 1.4;
-    for (let k = 0; k < 3; k++) { const s = new THREE.Mesh(S.geo('stink', () => new THREE.IcosahedronGeometry(0.35, 0)), new THREE.MeshBasicMaterial({ color: '#9be35a', transparent: true, opacity: 0.45, depthWrite: false })); s.position.set(-0.5 + k * 0.5, k * 0.2, 0); stink.add(s); }
-    stink.visible = false;
     const vip = seat(g, 'vip', 0.3, 0.45, Math.PI * 0.9); vip.visible = false; // une star en lunettes noires
-    g.userData = { figs, stink, vip }; g.visible = false;
+    g.userData = { figs, vip }; g.visible = false;
     return g;
   }
 
