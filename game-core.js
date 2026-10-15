@@ -1,7 +1,14 @@
 // Cœur du jeu : état, simulation, problèmes des commissariats, prime et étoiles, événements, achats, sauvegarde.
 window.GM = (function () {
   const { T, UNITS, UPGRADES, BUILDINGS, tier, site } = PD;
-  const SAVE_KEY = 'commissaire-parpaing-v1'; // même clé qu'avant : les parties en cours sont reprises
+  // Nouvelle version (refonte visuelle, plans, rééquilibrage) : nouvelle clé, les anciennes parties repartent à zéro.
+  // Un joueur qui avait une partie voit un message d'excuse (GM.wasReset) au lancement.
+  const SAVE_KEY = 'commissaire-parpaing-v2', OLD_KEYS = ['commissaire-parpaing-v1'];
+  let wasReset = false;
+  try {
+    for (const k of OLD_KEYS) if (localStorage.getItem(k) !== null) { wasReset = true; localStorage.removeItem(k); }
+    if (wasReset) localStorage.removeItem('parpaing-topo');
+  } catch (e) { /* stockage indisponible : rien à effacer */ }
   const G = {};
   const ui = { float() {}, toast() {}, pv() {}, fx: { arrive: 0, release: 0, citizen: 0, toPla: 0, angry: 0, toPts: 0 } };
   const UPG = Object.fromEntries(UPGRADES.map(u => [u.id, u]));
@@ -506,7 +513,7 @@ window.GM = (function () {
   }
 
   return {
-    G, T, ui, here, has, step, collect, weekStars, primeCalc, sigRate, satRate, cleanRate, propre, gavLimit, scandals, igpnLabel, manifWhen,
+    wasReset: () => wasReset, G, T, ui, here, has, step, collect, weekStars, primeCalc, sigRate, satRate, cleanRate, propre, gavLimit, scandals, igpnLabel, manifWhen,
     gavValue, plaValue, tamponValue, tamponPush, capacity, hallCap, cellCap, unitCost, upCost, bulk, unitOn, upOn, lv, up, down,
     buyUnit, buyUp, sellUp, sellValue, build, upTier, canMove, move, tampon, rate, save, load, newGame, golden, weekCapacity,
     enqTime, ptsTime, plaTime, invPerMin, ptsPerMin, patrolPerMin, citPerMin, accPerMin, plaPerMin, cleanPerMin, lawK, valMult,

@@ -377,6 +377,27 @@
     try { localStorage.setItem(TOPO_KEY, String(G.site)); } catch (e) { /* pas de stockage : la note reviendra */ }
     const go = $('topoGo'); go.onclick = () => { ov.hidden = true; }; go.focus({ preventScroll: true });
   }
+  // une seule fois, pour les joueurs qui avaient une partie avant la refonte
+  let resetSaid = false;
+  function showSorry() {
+    resetSaid = true;
+    const ov = $('topoOv');
+    ov.innerHTML = `<div class="topo" role="document">
+      <p class="topo-k">Note du commissaire Parpaing · nouvelle version</p>
+      <h2>Votre partie repart à zéro</h2>
+      <p>Toutes nos excuses pour la gêne occasionnée : votre ancienne sauvegarde n'est plus compatible avec cette version, la carrière recommence au premier poste.</p>
+      <p>Mais ça en vaut la chandelle :</p>
+      <ul>
+        <li><b>Nouveaux personnages</b>, tous différents, des pancartes aux masques des agents PTS.</li>
+        <li><b>Un commissariat différent dans chaque ville</b>, des décors refaits et de nouveaux noms de villes.</li>
+        <li><b>Un jeu rééquilibré</b>, une note de service avant chaque poste et un croissant doré tout neuf.</li>
+        <li><b>Un réglage de qualité graphique</b> (onglet Dossier) pour les téléphones plus anciens.</li>
+      </ul>
+      <p>Et désormais, la partie se sauvegarde toute seule, même quand vous quittez le jeu.</p>
+      <button type="button" class="go" id="topoGo">C'est reparti !</button></div>`;
+    ov.hidden = false;
+    const go = $('topoGo'); go.onclick = () => { ov.hidden = true; setTimeout(showTopo, 200); }; go.focus({ preventScroll: true });
+  }
   const topoSeen = () => { try { return localStorage.getItem(TOPO_KEY) === String(G.site); } catch (e) { return true; } };
 
   // ---------- croissant doré ----------
@@ -639,7 +660,7 @@
   function showTitle(had) {
     $('titleSave').textContent = had
       ? `Partie en cours · ${GM.here().name} · ${moneyFmt(G.money)} · ★ ${Math.min(G.cstars, T.STARS_TO_MOVE)}/${T.STARS_TO_MOVE}`
-      : 'Nouvelle partie · sauvegarde automatique dans ce navigateur';
+      : GM.wasReset() ? 'Nouvelle version : votre partie repart à zéro' : 'Nouvelle partie · sauvegarde automatique dans ce navigateur';
     $('playBtn').onclick = play;
     try { $('playBtn').focus({ preventScroll: true }); } catch (e) { /* ancien navigateur */ }
   }
@@ -649,7 +670,8 @@
     $('title').classList.add('out');
     setTimeout(() => { $('title').hidden = true; }, 450);
     if (welcome) setTimeout(() => toast(welcome), 500);
-    if (G.pending) showPV();
+    if (GM.wasReset() && !resetSaid) setTimeout(showSorry, 500);
+    else if (G.pending) showPV();
     else if (!topoSeen()) setTimeout(showTopo, 500);
   }
 
@@ -668,6 +690,7 @@
   // appli installable et jouable hors ligne (en https uniquement, comme sur GitHub Pages)
   if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
   window.addEventListener('beforeunload', GM.save);
+  window.addEventListener('pagehide', GM.save);
   document.addEventListener('visibilitychange', () => { if (document.hidden) GM.save(); });
   window.claude?.hot?.snapshot?.(() => JSON.parse(JSON.stringify(G)));
   if (window.claude?.hot?.ready) window.claude.hot.ready(d => start(d && d.n ? d : null));

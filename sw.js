@@ -1,5 +1,5 @@
 // Service worker : réseau d'abord (toujours la dernière version), cache en secours (jouable hors ligne).
-const CACHE = 'parpaing-v5';
+const CACHE = 'parpaing-v6';
 const CORE = [
   './', 'index.html', 'manifest.webmanifest', 'img/titre.webp',
   'data.js', 'scene-core.js', 'scene-people.js', 'scene-plans.js', 'scene-world.js', 'scene-world2.js', 'scene-decor.js', 'scene-building.js', 'scene-life.js', 'game-core.js', 'game-tips.js', 'game-ui.js',
