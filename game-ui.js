@@ -137,7 +137,7 @@
       armed = 0;
       GM.newGame();
       closeMap(); pvAuto = 0; $('pvSlot').innerHTML = '';
-      S.setSite(GM.here());
+      S.setSite(GM.here()); radio();
       toast(`Nouvelle partie ! Bienvenue à ${GM.here().name}.`);
       shape = ''; render();
     };
@@ -295,11 +295,13 @@
   $('mapBtn').onclick = openMap;
   $('mapOv').addEventListener('click', e => { if (e.target.id === 'mapOv') closeMap(); });
   // dans les secteurs sans fin, le dernier nœud est le poste actuel et un nœud de plus montre la mutation suivante
-  const NODE_HERE = [560, 45], NODE_NEXT = [660, 100];
+  // plus loin dans les secteurs, le secteur précédent garde sa place pour que la route reste complète
+  const NODE_HERE = [580, 40], NODE_NEXT = [672, 145], NODE_PREV = [550, 40];
   function drawMap() {
     const cur = G.site, last = NODES.length - 1;
     const spots = NODES.map((p, i) => ({ p, idx: i < last ? i : Math.max(last, cur) }));
-    if (cur >= last) { spots[last].p = NODE_HERE; spots.push({ p: NODE_NEXT, idx: cur + 1 }); }
+    if (cur > last) { spots[last] = { p: NODE_PREV, idx: cur - 1 }; spots.push({ p: [640, 40], idx: cur }, { p: NODE_NEXT, idx: cur + 1 }); }
+    else if (cur === last) { spots[last].p = NODE_HERE; spots.push({ p: NODE_NEXT, idx: cur + 1 }); }
     const path = spots.map((s, i) => (i ? 'L' : 'M') + s.p[0] + ' ' + s.p[1]).join(' ');
     let svg = `<svg class="mapsvg" viewBox="0 0 720 470" role="group" aria-label="Commissariats">
       <rect width="720" height="470" fill="#e9dfc4"/>
@@ -308,16 +310,17 @@
     for (const { p: [x, y], idx } of spots) {
       const s = site(idx);
       const done = idx < cur, here = idx === cur, next = idx === cur + 1, ring = here ? '#3d7bff' : done ? '#c48a00' : next ? '#e63946' : '#9aa0aa';
-      const anchor = x < 110 ? 'start" x="-30' : 'middle'; // le nom du premier poste ne déborde pas à gauche
+      const anchor = x < 110 ? 'start" x="-30' : x > 665 ? 'end" x="30' : 'middle'; // les noms ne débordent pas de la carte
       svg += `<g class="node" tabindex="0" data-i="${idx}" transform="translate(${x} ${y})">
         <circle r="30" fill="${done || here ? '#ffffff' : '#f4efe1'}" stroke="${ring}" stroke-width="${sel === idx ? 7 : 4}" class="ring"/>
         <g opacity="${done || here || next ? 1 : 0.45}" transform="scale(.9)">${ICON[s.biome]}</g>
         <text y="46" text-anchor="${anchor}" font-family="Rubik, sans-serif" font-weight="800" font-size="12.5" fill="#2a2833">${idx > cur + 1 ? 'Secteurs suivants' : idx < last ? (idx + 1) + '. ' + s.name : s.name.replace('Secteur Parpaing', 'Secteur')}</text>
-        <text y="61" text-anchor="${anchor}" font-family="Rubik, sans-serif" font-size="12" fill="#5a5560">${here ? 'Vous êtes ici · ★ ' + Math.min(G.cstars, T.STARS_TO_MOVE) + '/' + T.STARS_TO_MOVE : done ? 'Terminé ★ ' + (G.siteStars[idx] || T.STARS_TO_MOVE) : next ? 'Prochaine mutation' : 'Verrouillé'}</text>
+        <text y="61" text-anchor="${anchor}" font-family="Rubik, sans-serif" font-size="12" fill="#5a5560">${here ? (idx > last ? 'Ici · ★ ' : 'Vous êtes ici · ★ ') + Math.min(G.cstars, T.STARS_TO_MOVE) + '/' + T.STARS_TO_MOVE : done ? 'Terminé ★ ' + (G.siteStars[idx] || T.STARS_TO_MOVE) : next ? 'Prochaine mutation' : 'Verrouillé'}</text>
       </g>`;
     }
     svg += '</svg>';
-    const s = site(sel), isNext = sel === cur + 1, prevProbs = sel > 0 ? site(sel - 1).problems : [];
+    const s = site(sel), isNext = sel === cur + 1, prevProbs = [];
+    for (let i = 0; i < sel; i++) prevProbs.push(...site(i).problems); // « nouveau » : jamais rencontré dans un poste précédent
     const probs = s.problems.length ? s.problems.map(k => `<div class="pb"><b>${PROBLEMS[k].name}${prevProbs.includes(k) ? '' : ' · nouveau'}</b>${PROBLEMS[k].desc}</div>`).join('') : '<div class="pb"><b>Aucun problème particulier</b>Le poste idéal pour apprendre le métier.</div>';
     let btn;
     if (sel === cur) btn = '<button class="go" disabled>Vous êtes ici</button>';
@@ -342,7 +345,7 @@
       if (!armMove) { armMove = true; drawMap(); return; }
       if (GM.move()) {
         closeMap(); $('pvSlot').innerHTML = '';
-        S.setSite(GM.here());
+        S.setSite(GM.here()); radio();
         toast(`Bienvenue à ${GM.here().name} ! Nouveau poste, nouveaux problèmes.`);
         render();
       }
@@ -415,7 +418,7 @@
     if (GM.has('vomi')) { const p = GM.propre(); rows.push(['Propreté', pct(p), p >= 0.9 ? 'ok' : p >= 0.6 ? 'warn' : 'bad', 'propre']); }
     if (GM.has('pieds')) rows.push(['Malaises PTS', W.malaises, W.malaises ? 'bad' : 'ok', 'malaise']);
     if (GM.has('delai')) rows.push(['GAV levées', W.levees, W.levees ? 'bad' : 'ok', 'levee']);
-    if (GM.has('manif')) rows.push(['Manif', G.manifLeft > 0 ? 'EN COURS' : 'dans ' + Math.ceil(G.manifIn) + ' s', G.manifLeft > 0 ? 'bad' : '', 'manif']);
+    if (GM.has('manif')) rows.push(['Manif', GM.manifWhen(), G.manifLeft > 0 ? 'bad' : '', 'manif']);
     if (GM.has('neige')) rows.push(['Tempête', G.stormLeft > 0 ? 'EN COURS' : 'dans ' + Math.ceil(G.stormIn) + ' s', G.stormLeft > 0 ? 'bad' : '', 'storm']);
     if (GM.has('interpretes')) rows.push(['Colis suspect', G.colisLeft > 0 ? 'ALERTE' : 'dans ' + Math.ceil(G.colisIn) + ' s', G.colisLeft > 0 ? 'bad' : '', 'colis']);
     if (GM.has('vip')) { const sc = GM.scandals(W); rows.push(['Scandales', `${W.scandales} (${sc} restant${sc > 1 ? 's' : ''})`, sc ? 'bad' : 'ok', 'scandal']); }
@@ -453,7 +456,7 @@
     const smellyNow = G.det.some(d => d.smelly);
     const foreignWaiting = GM.has('interpretes') && G.det.filter(d => d.foreign && d.e < 1).length > G.n.interp;
     const toAudit = G.det.filter(d => d.e < 1).length; // sans compter celles qui attendent seulement la PTS
-    if (GM.lost()) { msg = 'Manif : plus de place, des manifestants repartent libres ! Il faut des cellules, des chaises et des enquêteurs en réserve.'; lvl = 'bad'; }
+    if (GM.lost()) { msg = "Manif : plus de place, des manifestants repartent libres ! Agrandissez la salle d'attente (chaises, salle XXL)."; lvl = 'bad'; }
     else if (GM.has('neige') && G.stormLeft > 0 && G.n.snow < G.n.patrols) { msg = 'Tempête de neige : sans motoneiges, les patrouilles sont bloquées.'; lvl = 'warn'; }
     else if (foreignWaiting) { msg = 'Des passagers étrangers attendent un interprète pour leur audition.'; lvl = 'warn'; }
     else if (GM.has('vip') && GM.scandals(W) > 0) { msg = "Scandale de star ! La prime est divisée par deux : recrutez un chargé de com'."; lvl = 'bad'; }
@@ -469,17 +472,24 @@
       else { msg = `Signalisation de la semaine à ${pct(r)} : la PTS suit le rythme maintenant, le taux va remonter.`; lvl = 'warn'; }
     }
     else if (G.built.accueil && s !== null && s < 0.8) { msg = "L'accueil déborde : des usagers repartent fâchés."; lvl = 'warn'; }
-    else if (GM.has('manif') && W.lost > 0 && GM.invPerMin() < GM.patrolPerMin() * T.MANIF_MULT) {
-      // une manif triple les interpellations : seuls des enquêteurs en réserve vident les cellules à temps
-      msg = `Prochaine manif dans ${Math.ceil(G.manifIn)} s : gardez des enquêteurs en réserve (${fmt(GM.invPerMin())} auditions/min pour ${fmt(GM.patrolPerMin() * T.MANIF_MULT)} interpellations/min pendant une manif).`; lvl = 'warn';
+    else if (GM.has('manif') && G.manifLeft <= 0 && GM.hallCap() < GM.manifExtra() * 0.8) {
+      // la salle d'attente encaisse le surplus d'une manif : on prévient avant
+      msg = `Agrandissez la salle d'attente (${GM.hallCap()} places) : la manif ${GM.manifWhen() === 'semaine prochaine' ? 'de la semaine prochaine' : 'de ' + GM.manifWhen()} en amènera environ ${GM.manifExtra()} de trop.`; lvl = 'warn';
     }
-    else if (G._patrolWait && !G.manifLeft) { msg = 'Cellules pleines : les patrouilles attendent une place. Recrutez des enquêteurs et des agents PTS, pas des patrouilles.'; lvl = 'warn'; }
+    else if (!G.built.accueil && G.money >= 60) msg = `Ouvrez l'accueil (onglet Bâtiment) : du public, des plaintes${GM.here().star3.id === 'sat' ? ", et c'est la condition de l'étoile 3 ici" : ''}.`;
+    else if (G._patrolWait && !G.manifLeft) {
+      // on désigne le vrai goulot : la PTS qui retient les GAV, des enquêteurs sans personne à auditionner, ou des enquêteurs débordés
+      const waitPts = G.det.length - toAudit, idle = Math.max(0, G.n.inv - (G._meeting || 0) - (G._invBusy || 0));
+      if (waitPts >= GM.capacity() * 0.3 && (G._ptsBusy || 0) >= G.n.pts - G.ptsDown.length) msg = `Recrutez des agents PTS : ${waitPts} GAV attendent leur signalisation et bloquent les cellules.`;
+      else if (idle > 0) msg = `Construisez des cellules : ${idle} enquêteur${idle > 1 ? 's' : ''} sans personne à auditionner, et les patrouilles attendent.`;
+      else msg = 'Recrutez des enquêteurs : cellules pleines et enquêteurs tous occupés.';
+      lvl = 'warn';
+    }
     else if (toAudit > G.n.inv + 1) { msg = `${toAudit} GAV attendent leur audition pour ${G.n.inv} enquêteur${G.n.inv > 1 ? 's' : ''} : recrutez des enquêteurs.`; lvl = 'warn'; }
     else if (G.built.plaintes && G.plaQ > G.n.pla * 3) { msg = "Les plaintes s'empilent : recrutez des agents des plaintes."; lvl = 'warn'; }
     else if (!G.det.length && !G.hall) { msg = 'Cellules vides : il faut plus de patrouilles.'; lvl = 'warn'; }
-    else if (!G.built.accueil && G.money >= 60) msg = "Vous pouvez ouvrir l'accueil (onglet Bâtiment).";
     else if (GM.canMove()) msg = 'Mutation possible : ouvrez la carte !';
-    if (adv.textContent !== msg) adv.textContent = msg;
+    const txt = $('adviceTxt'); if (txt.textContent !== msg) { txt.textContent = msg; adv.title = msg; }
     adv.className = 'card advice ' + lvl;
   }
   function view() {
@@ -525,7 +535,7 @@
     const real = Math.max(0, (now - last) / 1000);
     last = now;
     const dt = Math.min(real, 300);
-    if (real > dt) { const g = GM.rate() * (real - dt) * 0.5; G.money += g; G.runEarned += g; }
+    if (real > dt) { const g = GM.baseRate() * (real - dt) * 0.5; G.money += g; G.runEarned += g; }
     let left = dt;
     while (left > 0) { const s = Math.min(left, 0.1); GM.step(s); left -= s; }
     const fx = GM.ui.fx;

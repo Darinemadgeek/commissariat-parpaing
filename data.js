@@ -45,9 +45,9 @@ window.PD = (function () {
     GAV_LIMIT: 55,          // délai légal (24 h de jeu)
     LAWYER: 0.25,           // part des GAV avec avocat
     LAWYER_SLOW: 0.6,
-    MANIF_EVERY: 140,
+    MANIF_DAY: [0.5, 5],    // une manif par semaine, entre le lundi midi et le samedi midi
     MANIF_LEN: 25,
-    MANIF_MULT: 3,
+    MANIF_WAVE: 2,          // pendant une manif, les manifestants arrivent deux fois plus vite que les auditions
     LOST_TOL: 0.1,          // étoile « relâchés » : au plus 10 % des interpellations de la semaine
   };
 
@@ -94,7 +94,7 @@ window.PD = (function () {
     vomi: { name: 'Vomi dans les couloirs', desc: "Les GAV ivres vomissent dans les couloirs. Chaque flaque fait glisser tout le monde et ralentit tous les services. Il faut une équipe de ménage." },
     pieds: { name: 'Odeur de pieds', desc: "Certaines GAV puent tellement des pieds qu'un agent PTS sans masque à gaz travaille au ralenti et peut tomber dans les pommes." },
     delai: { name: 'Délai légal et avocats', desc: "Une GAV dure 24 h maximum. Au-delà, elle est levée et le dossier est perdu. Les avocats font traîner les auditions." },
-    manif: { name: 'Manifestations', desc: "Régulièrement, une manif amène des vagues entières d'interpellations. Il faut de la place en cellule, en salle d'attente, et des enquêteurs en réserve pour vider les cellules à temps." },
+    manif: { name: 'Manifestations', desc: "Chaque semaine, un jour annoncé dans la carte de la semaine, une manif amène des vagues entières d'interpellations, deux fois plus vite que les auditions. Le surplus doit tenir en salle d'attente, que les patrouilles laissent libre pour l'occasion." },
     touristes: { name: 'Touristes', desc: "Trois fois plus de public, qui perd tout : lunettes, enfants, voiture de location. Les plaintes vont plus vite mais rapportent moitié moins. Il faut un accueil costaud." },
     neige: { name: 'Tempêtes de neige', desc: "Régulièrement, une tempête bloque les patrouilles : seules les motoneiges continuent d'interpeller. Les chaînes à neige raccourcissent les tempêtes." },
     interpretes: { name: 'Passagers étrangers', desc: "Une partie des GAV ne parle pas français : leur audition attend un interprète libre. De temps en temps, un colis suspect mobilise une partie de la PTS." },
@@ -111,7 +111,7 @@ window.PD = (function () {
     { name: 'Parpaing-la-Défense', biome: 'megapole', kind: 'Mégapole', problems: ['vomi', 'pieds', 'delai'], style: 'glass', star3: { id: 'levee', label: 'Aucune GAV levée' },
       pitch: "Des avocats d'affaires partout. Passé le délai légal, la GAV est levée et le dossier part à la poubelle." },
     { name: 'Parpaing-Nord', biome: 'cite', kind: 'Banlieue', problems: ['pieds', 'delai', 'manif'], style: 'bunker', star3: { id: 'lost', label: 'Relâchés faute de place ≤ 10 %' },
-      pitch: 'Une manif par jour, minimum. Les interpellations arrivent par cars entiers.' },
+      pitch: 'Une grosse manif chaque semaine. Les interpellations arrivent par cars entiers.' },
     { name: 'Parpaing-Plage', biome: 'plage', kind: 'Bord de mer', problems: ['touristes', 'pieds', 'vomi'], style: 'beach', star3: { id: 'sat', min: 0.85, label: 'Usagers bien reçus ≥ 85 %' },
       pitch: 'Tongs, sangria et coups de soleil. Les touristes perdent tout, les mouettes volent le reste.' },
     { name: 'Parpaing-les-Neiges', biome: 'neige', kind: 'Montagne', problems: ['neige', 'vomi', 'touristes'], style: 'chalet', star3: { id: 'clean', label: 'Propreté des couloirs ≥ 90 %' },

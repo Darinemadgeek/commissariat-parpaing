@@ -17,18 +17,20 @@ window.GM = (function () {
       built: { accueil: false, plaintes: false },
       tier: 0, det: [], hall: 0, cit: 0, citT: 0, plaQ: 0, plaW: [], pistes: 0,
       vomit: 0, cleanT: 0, ptsDown: [],
-      manifIn: T.MANIF_EVERY, manifLeft: 0, stormIn: T.STORM_EVERY, stormLeft: 0, colisIn: T.COLIS_EVERY, colisLeft: 0,
+      manifIn: nextManif(), manifLeft: 0, stormIn: T.STORM_EVERY, stormLeft: 0, colisIn: T.COLIS_EVERY, colisLeft: 0,
       meetIn: T.MEETING_EVERY, meetLeft: 0, igpn: 'sig98',
-      acc: { patrol: 0, cit: 0 },
+      acc: { patrol: 0, cit: 0, manif: 0 },
       week: newWeek(1), objective: T.OBJ_START, buffs: [], pending: null, quests: [],
       total: keep.total || { gav: 0, pla: 0, primes: 0 }, goldenIn: 40, lastSave: Date.now(), rateEst: 0,
     };
   }
+  // une manif par semaine, un jour tiré au sort (elle finit avant dimanche soir)
+  function nextManif() { const [a, b] = T.MANIF_DAY; return T.DAY_LEN * (a + Math.random() * (b - a)); }
   function reset(obj) { for (const k of Object.keys(G)) delete G[k]; Object.assign(G, obj); }
   reset(fresh());
 
   // ---------- multiplicateurs (une seule source pour le jeu et les infobulles) ----------
-  let perf = 0, earnedLog = [];
+  let perf = 0, earnedLog = [], rateLong = 0, rateLongT = 0; // rateLong : recette moyenne sur ~2 min, sert aux gains d'absence
   const here = () => site(G.site);
   const has = p => here().problems.includes(p);
   const hardK = () => 1 + 0.25 * (here().hard || 0);
@@ -70,6 +72,9 @@ window.GM = (function () {
   const invPerMin = () => (60 * invAvail()) / enqTime(true);
   const ptsPerMin = () => (60 * ptsAvail()) / ptsTime(true);
   const patrolPerMin = () => (60 * G.n.patrols / T.PATROL_TIME) * up('gyro');
+  // manif : des manifestants au double du rythme des auditions ; le surplus doit tenir en salle d'attente
+  const manifRate = () => (invAvail() / enqTime(true)) * T.MANIF_WAVE;
+  const manifExtra = () => Math.ceil(T.MANIF_LEN * (T.MANIF_WAVE - 1) * (G.n.inv / enqTime(false)));
   const citPerMin = () => (G.built.accueil ? (60 / T.CITIZEN_TIME) * (1 + 0.4 * G.tier) * up('com') * Math.max(1, Math.sqrt(G.n.acc)) * (has('touristes') ? T.TOURIST_MULT : 1) : 0);
   const accPerMin = () => (60 * G.n.acc * up('tickets')) / T.ACC_TIME;
   const plaTime = () => T.PLA_TIME / (up('form') * (has('touristes') ? T.TOURIST_SPEED : 1));
@@ -86,7 +91,10 @@ window.GM = (function () {
     // interpellations, moins les tempêtes pour les patrouilles sans motoneige
     let pat = patrolPerMin() * (G.built.plaintes ? 1.25 : 1);
     if (has('neige')) pat *= 1 - (T.STORM_LEN * down('chains') / T.STORM_EVERY) * (1 - Math.min(1, G.n.snow / Math.max(1, G.n.patrols)));
-    const gav = Math.min(inv, pat);
+    // places en cellule : une GAV y reste le temps de son audition, ou de sa signalisation si celle-ci est plus longue
+    const stay = Math.max(enqTime(false), Math.min(ptsTime(false), enqTime(false) + T.PTS_WAIT));
+    const cellsMax = (60 * capacity()) / stay;
+    const gav = Math.min(inv, pat, cellsMax);
     const pla = G.built.plaintes ? Math.min(plaPerMin(), accPerMin(), citPerMin()) : 0;
     return (gav + pla) * wk;
   }
@@ -105,6 +113,14 @@ window.GM = (function () {
   // l'IGPN n'inspecte que là où elle donne la 3e étoile, et seulement des critères qui peuvent rater ici
   const igpnHere = () => here().star3.id === 'igpn';
   function rollIgpn() { const ids = Object.keys(IGPN).filter(k => (k !== 'sat90' || G.built.accueil) && (k !== 'nolost' || has('manif')) && (k !== 'nolevee' || has('delai'))); G.igpn = ids[Math.floor(Math.random() * ids.length)]; }
+  // quand tombe la manif de la semaine : « EN COURS », « jeudi (dans 23 s) » ou « semaine prochaine »
+  const DAYS = ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
+  function manifWhen() {
+    if (G.manifLeft > 0) return 'EN COURS';
+    const at = G.week.t + G.manifIn;
+    if (at >= T.DAY_LEN * 7) return 'semaine prochaine';
+    return `${DAYS[Math.floor(at / T.DAY_LEN)]} (dans ${Math.ceil(G.manifIn)} s)`;
+  }
   const igpnLabel = () => (IGPN[G.igpn] || IGPN.sig98).label;
   // Les 3 étoiles d'une semaine : objectif de dossiers, signalisation, critère du commissariat
   function weekStars(w) {
@@ -163,9 +179,9 @@ window.GM = (function () {
   }
 
   // ---------- simulation ----------
-  function earn(v, zone, cls) {
+  function earn(v, zone, cls, windfall) {
     G.money += v; G.runEarned += v; G.week.earned += v;
-    earnedLog.push([perf, v]);
+    if (!windfall) earnedLog.push([perf, v]); // une saisie du croissant ne gonfle pas la recette par seconde
     if (zone) ui.float(zone, '+' + PD.eur(v), cls);
   }
   function newDet() {
@@ -192,27 +208,37 @@ window.GM = (function () {
     G.buffs = G.buffs.filter(b => b.until > perf);
     const W = G.week, fx = ui.fx;
 
-    const manif = cycle('manif', 'manifIn', 'manifLeft', T.MANIF_EVERY, T.MANIF_LEN, 'Manifestation ! Les interpellations arrivent par cars entiers.', 'Fin de la manif. Les pancartes rentrent à la maison.', dt);
+    const manif = cycle('manif', 'manifIn', 'manifLeft', T.DAY_LEN * 14, T.MANIF_LEN, 'Manifestation ! Les interpellations arrivent par cars entiers.', 'Fin de la manif. Les pancartes rentrent à la maison.', dt);
     const storm = cycle('neige', 'stormIn', 'stormLeft', T.STORM_EVERY, T.STORM_LEN * down('chains'), 'Tempête de neige ! Seules les motoneiges peuvent encore patrouiller.', 'La tempête est passée, les patrouilles repartent.', dt);
     cycle('interpretes', 'colisIn', 'colisLeft', T.COLIS_EVERY, T.COLIS_LEN, 'Colis suspect au terminal 2 ! Une partie de la PTS est mobilisée.', 'Fausse alerte : c\'était un sandwich.', dt);
     cycle('reunion', 'meetIn', 'meetLeft', T.MEETING_EVERY, T.MEETING_LEN * down('mailr'), 'Réunion ! Une partie des enquêteurs quitte son bureau.', 'Fin de la réunion. Décision : faire une autre réunion.', dt);
 
     // Patrouilles : plus vite avec des pistes, bloquées par la neige (sauf motoneiges)
     const patrolsOn = storm ? Math.min(G.n.patrols, G.n.snow) : G.n.patrols;
-    const pRate = (patrolsOn / T.PATROL_TIME) * up('gyro') * (buffOn('bac') ? 3 : 1) * (G.pistes > 0 ? T.PISTE_BOOST : 1) * (manif ? T.MANIF_MULT : 1) * (buffOn('laurine') ? 0.95 : 1);
-    // Sans place en cellule ni en salle d'attente, une patrouille attend avant d'interpeller.
-    // Une manif, elle, ne prévient pas : ceux qui n'ont pas de place sont relâchés.
-    G.acc.patrol += pRate * dt;
+    const pRate = (patrolsOn / T.PATROL_TIME) * up('gyro') * (buffOn('bac') ? 3 : 1) * (G.pistes > 0 ? T.PISTE_BOOST : 1) * (buffOn('laurine') ? 0.95 : 1);
     G._patrolWait = false;
-    while (G.acc.patrol >= 1) {
-      const room = G.det.length < capacity() || G.hall < hallCap();
-      if (!room && !manif) { G.acc.patrol = 1; G._patrolWait = true; break; }
-      G.acc.patrol -= 1;
-      if (G.pistes > 0) G.pistes--;
-      W.inter++;
-      if (G.det.length < capacity()) { G.det.push(newDet()); fx.arrive++; }
-      else if (G.hall < hallCap()) { G.hall++; fx.arrive++; }
-      else { W.lost++; lostFlash = 6; }
+    if (manif) {
+      // Manif : les patrouilles encadrent le cortège et les manifestants arrivent deux fois plus vite que les auditions.
+      // Une manif ne prévient pas : ceux qui ne trouvent de place ni en cellule ni en salle d'attente sont relâchés.
+      G.acc.manif = (G.acc.manif || 0) + manifRate() * dt;
+      while (G.acc.manif >= 1) {
+        G.acc.manif -= 1; W.inter++;
+        if (G.det.length < capacity()) { G.det.push(newDet()); fx.arrive++; }
+        else if (G.hall < hallCap()) { G.hall++; fx.arrive++; }
+        else { W.lost++; lostFlash = 6; }
+      }
+    } else {
+      // Sans place, une patrouille attend avant d'interpeller. Là où il y a des manifs, la salle d'attente leur reste réservée.
+      G.acc.patrol += pRate * dt;
+      while (G.acc.patrol >= 1) {
+        const room = G.det.length < capacity() || (!has('manif') && G.hall < hallCap());
+        if (!room) { G.acc.patrol = 1; G._patrolWait = true; break; }
+        G.acc.patrol -= 1;
+        if (G.pistes > 0) G.pistes--;
+        W.inter++;
+        if (G.det.length < capacity()) G.det.push(newDet()); else G.hall++;
+        fx.arrive++;
+      }
     }
     while (G.hall > 0 && G.det.length < capacity()) { G.hall--; G.det.push(newDet()); }
 
@@ -281,7 +307,7 @@ window.GM = (function () {
       G.acc.cit += (citPerMin() / 60) * dt;
       while (G.acc.cit >= 1) {
         G.acc.cit -= 1;
-        if (G.cit < hallCap() + 6) { G.cit++; fx.citizen++; } else { W.partis++; fx.angry++; }
+        if (G.cit < T.HALL + UPG.hall.per * lv('hall') + 6) { G.cit++; fx.citizen++; } else { W.partis++; fx.angry++; }
       }
       const aSp = (G.n.acc * up('tickets') * allSpeed()) / T.ACC_TIME;
       if (G.cit > 0) {
@@ -313,6 +339,8 @@ window.GM = (function () {
     G.goldenIn -= dt;
     lostFlash = Math.max(0, lostFlash - dt);
     while (earnedLog.length && earnedLog[0][0] < perf - 20) earnedLog.shift();
+    // moyenne lente : un bonus de 20 s du croissant ne fait pas exploser les gains d'absence
+    if ((rateLongT += dt) >= 1) { rateLong += (rate() - rateLong) * Math.min(1, rateLongT / 120); rateLongT = 0; }
   }
   function plainteDone(silent) {
     G.week.pla++; G.total.pla++;
@@ -337,6 +365,7 @@ window.GM = (function () {
     G.objective = Math.max(T.OBJ_START, Math.min(next, cap));
     if (p.n === 3) G.medals = Math.min(G.medals + 1, 6);
     G.week = newWeek(w.no + 1);
+    if (has('manif') && G.manifLeft <= 0) G.manifIn = nextManif();
     rollQuests();
     if (igpnHere()) rollIgpn();
     ui.pv();
@@ -363,7 +392,7 @@ window.GM = (function () {
     let r = Math.random() * pool.reduce((s, g) => s + g.w, 0), g = pool[0];
     for (const x of pool) { if ((r -= x.w) <= 0) { g = x; break; } }
     let msg = g.msg;
-    if (g.id === 'cash') { const v = Math.max(50, rate() * 90 + G.money * 0.05); earn(v); msg += ' +' + PD.eur(v); }
+    if (g.id === 'cash') { const v = Math.max(50, rate() * 90 + G.money * 0.05); earn(v, null, null, true); msg += ' +' + PD.eur(v); }
     else if (g.id === 'stagiaire') { const n = G.plaQ + G.plaW.length; G.plaQ = 0; G.plaW = []; for (let i = 0; i < n; i++) plainteDone(true); msg += ` ${n} plainte${n > 1 ? 's' : ''} bouclée${n > 1 ? 's' : ''}.`; }
     else if (g.id === 'bbq') { const n = G.cit; G.cit = 0; G.week.recus += n; if (G.built.plaintes) G.plaQ += n; else for (let i = 0; i < n; i++) earn(plaValue() * 0.2); msg += ` ${n} usager${n > 1 ? 's' : ''} reçu${n > 1 ? 's' : ''} d'un coup.`; }
     else if (g.id === 'amelie') { const n = G.det.length + G.hall; G.det = []; G.hall = 0; ui.fx.release += Math.min(n, 6); msg += ` ${n} personne${n > 1 ? 's' : ''} dans la nature (sans effet sur vos stats).`; }
@@ -435,12 +464,12 @@ window.GM = (function () {
     return v;
   }
   // tout effacer : nouvelle partie au premier commissariat
-  function newGame() { reset(fresh()); earnedLog = []; save(); }
+  function newGame() { reset(fresh()); earnedLog = []; rateLong = 0; save(); }
   const rate = () => earnedLog.reduce((s, e) => s + e[1], 0) / Math.min(20, Math.max(5, perf));
 
   // ---------- sauvegarde ----------
   function save() {
-    G.lastSave = Date.now(); G.rateEst = rate();
+    G.lastSave = Date.now(); G.rateEst = rateLong;
     try { localStorage.setItem(SAVE_KEY, JSON.stringify(G)); } catch (e) { /* stockage indisponible */ }
   }
   function load(data) {
@@ -461,15 +490,16 @@ window.GM = (function () {
     if (m.pending && !(m.pending.prime >= 0)) m.pending = null;
     if (m.pending && !m.pending.st) { m.money += m.pending.prime || 0; m.pending = null; } // PV de l'ancienne version : prime versée
     reset(m);
+    rateLong = +m.rateEst || 0;
     return true;
   }
 
   return {
-    G, T, ui, here, has, step, collect, weekStars, primeCalc, sigRate, satRate, cleanRate, propre, gavLimit, scandals, igpnLabel,
+    G, T, ui, here, has, step, collect, weekStars, primeCalc, sigRate, satRate, cleanRate, propre, gavLimit, scandals, igpnLabel, manifWhen,
     gavValue, plaValue, tamponValue, tamponPush, capacity, hallCap, cellCap, unitCost, upCost, bulk, unitOn, upOn, lv, up, down,
     buyUnit, buyUp, sellUp, sellValue, build, upTier, canMove, move, tampon, rate, save, load, newGame, golden, weekCapacity,
     enqTime, ptsTime, plaTime, invPerMin, ptsPerMin, patrolPerMin, citPerMin, accPerMin, plaPerMin, cleanPerMin, lawK, valMult,
-    perf: () => perf, lost: () => lostFlash > 0, buffOn,
+    perf: () => perf, lost: () => lostFlash > 0, buffOn, manifRate, manifExtra, baseRate: () => rateLong,
     addBuff,
     earn, slip, questInfo,
   };

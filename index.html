@@ -170,7 +170,8 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 
 /* bas du HUD : le tampon a une place fixe, la bulle de conseil ne peut plus le pousser */
 .hud-bottom{position:relative;min-height:64px}
-.advice{position:absolute;left:0;bottom:0;max-width:min(440px,calc(100% - 190px));padding-left:30px;font-weight:700;font-size:13px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.advice{position:absolute;left:0;bottom:0;box-sizing:border-box;max-width:min(470px,calc(100% - 232px));padding-left:30px;font-weight:700;font-size:13px;line-height:1.3}
+.advice span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .advice::before{content:"";position:absolute;left:12px;top:50%;margin-top:-5px;width:10px;height:10px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 35%,transparent)}
 .advice.warn::before{background:var(--warn);box-shadow:0 0 0 3px color-mix(in srgb,var(--warn) 35%,transparent)}
 .advice.bad::before{background:var(--bad);box-shadow:0 0 0 3px color-mix(in srgb,var(--bad) 35%,transparent);animation:blink .6s steps(2) infinite}
@@ -300,7 +301,8 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
   .tampon{font-size:13px;padding:6px 8px;width:118px;border-radius:12px;box-shadow:0 4px 0 var(--line)}
   .tampon small{font-size:10.5px}
   .hud-bottom{min-height:46px}
-  .advice{font-size:11.5px;max-width:calc(100% - 128px);padding:6px 9px 6px 26px}
+  .advice{font-size:11.5px;max-width:calc(100% - 150px);padding:6px 9px 6px 26px}
+  .advice span{-webkit-line-clamp:3}
   .advice::before{left:10px}
   .radio{height:22px;font-size:11px}
   .radio b{font-size:10px;padding:0 8px}
@@ -364,7 +366,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
         </div>
       </div>
       <div class="hud-bottom">
-        <div class="card advice" id="advice">Tout roule, commissaire.</div>
+        <div class="card advice" id="advice"><span id="adviceTxt">Tout roule, commissaire.</span></div>
         <button class="tampon" id="tamponBtn" type="button">COUP DE TAMPON<small id="tamponVal">+1 €</small></button>
       </div>
     </div>
