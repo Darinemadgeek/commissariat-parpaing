@@ -50,6 +50,7 @@ La partie est sauvegardée automatiquement dans le navigateur.
 - `scene-core.js` : le moteur 3D (Three.js r128), les étiquettes, les clics
 - `scene-people.js` : les personnages (modèle façon Settlers, tirés au hasard par rôle puis fusionnés en un seul maillage)
 - `scene-world.js` / `scene-world2.js` : les décors (campagne, villes, plage, montagne, aéroport, festival, ministère) et la circulation
+- `scene-decor.js` : les décors des 10 lieux dans le style des personnages (monument derrière, vie du quartier devant), qui remplacent ceux de `scene-world`
 - `scene-plans.js` : le plan de chaque commissariat (forme, pièces, couloirs, trajets)
 - `scene-building.js` : le commissariat en vue coupe, construit à partir de son plan
 - `scene-life.js` : les animations et la synchro avec la partie

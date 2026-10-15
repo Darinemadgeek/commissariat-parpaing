@@ -371,11 +371,55 @@
     <ellipse cx="77" cy="26" rx="4.5" ry="2.2" transform="rotate(10 77 26)" fill="#fff" opacity=".4"/>
     <ellipse cx="24" cy="42" rx="3" ry="1.6" transform="rotate(-50 24 42)" fill="#fff" opacity=".4"/>
   </svg><i class="spark s1"></i><i class="spark s2"></i><i class="spark s3"></i>`;
+  // le vrai croissant : modèle 3D feuilleté (couches enroulées, pointes recourbées, dorure à l'œuf),
+  // dessiné une seule fois dans une image au chargement ; le dessin SVG reste en secours sans WebGL
+  let croissantImg = null;
+  function croissantPicture() {
+    if (croissantImg !== null) return croissantImg;
+    croissantImg = '';
+    try {
+      const W = 240, H = 170, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+      const r = new THREE.WebGLRenderer({ canvas: cv, alpha: true, antialias: true, preserveDrawingBuffer: true });
+      const sc = new THREE.Scene(), cam = new THREE.PerspectiveCamera(30, W / H, 0.1, 50);
+      cam.position.set(0, 6.2, 8.4); cam.lookAt(0, -0.1, 0);
+      sc.add(new THREE.HemisphereLight('#fff6e8', '#7a6a50', 0.65));
+      const k = new THREE.DirectionalLight('#fff0d8', 0.9); k.position.set(4, 6, 5); sc.add(k);
+      const rim = new THREE.DirectionalLight('#ffe0a0', 0.7); rim.position.set(-5, 3, -4); sc.add(rim);
+      const TU = 120, RA = 28, A = 1.38, RR = 1.55, NR = 6, pos = [], col = [], idx = [];
+      const pale = new THREE.Color('#d8a865'), mid = new THREE.Color('#a85a26'), deep = new THREE.Color('#6a3212'), crest = new THREE.Color('#c48644');
+      for (let i = 0; i <= TU; i++) {
+        const t = i / TU, th = (t - 0.5) * 2 * A, s = Math.sin(Math.PI * t), base = 0.7 * (0.03 + 0.97 * Math.pow(s, 0.9));
+        const C = new THREE.Vector3(RR * Math.sin(th), -0.3 * Math.pow(1 - s, 2), RR * Math.cos(th) - RR);
+        const N = new THREE.Vector3(Math.cos(th), 0, -Math.sin(th)).cross(new THREE.Vector3(0, 1, 0)).normalize();
+        for (let j = 0; j <= RA; j++) {
+          const ph = j / RA * Math.PI * 2, bump = 0.5 + 0.5 * Math.cos((NR * t + ph / (Math.PI * 2) * 0.55) * Math.PI * 2);
+          const rr = base * (0.92 + 0.11 * Math.pow(bump, 1.4));
+          let y = Math.sin(ph) * rr * 0.8; if (y < -0.32 * rr) y = -0.32 * rr - (y + 0.32 * rr) * 0.15;
+          const P = C.clone().addScaledVector(N, Math.cos(ph) * rr); P.y += y;
+          pos.push(P.x, P.y, P.z);
+          const top = Math.max(0, Math.sin(ph)), tip = 1 - Math.pow(s, 0.5);
+          const cc = pale.clone().lerp(mid, Math.min(1, 0.25 + top * 0.9)).lerp(deep, Math.pow(1 - bump, 3) * (0.2 + top * 0.35) + tip * 0.3).lerp(crest, Math.pow(bump, 4) * top * 0.45);
+          col.push(cc.r, cc.g, cc.b);
+        }
+      }
+      for (let i = 0; i < TU; i++) for (let j = 0; j < RA; j++) { const a = i * (RA + 1) + j, b = a + RA + 1; idx.push(a, b, a + 1, b, b + 1, a + 1); }
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+      g.setIndex(idx); g.computeVertexNormals(); g.center();
+      const m = new THREE.Mesh(g, new THREE.MeshPhysicalMaterial({ vertexColors: true, roughness: 0.5, clearcoat: 0.35, clearcoatRoughness: 0.45 }));
+      m.rotation.y = Math.PI; m.rotation.x = 0.12; sc.add(m);
+      r.render(sc, cam);
+      croissantImg = cv.toDataURL('image/png');
+      g.dispose(); r.dispose(); if (r.forceContextLoss) r.forceContextLoss();
+    } catch (e) { croissantImg = ''; }
+    return croissantImg;
+  }
   let golden = null;
   function spawnGolden() {
     const el = document.createElement("button");
     el.className = "golden"; el.type = "button"; el.setAttribute("aria-label", "Croissant doré : cliquez pour une surprise");
-    el.innerHTML = CROISSANT;
+    const pic = croissantPicture();
+    el.innerHTML = pic ? `<img src="${pic}" alt="" draggable="false"><i class="spark s1"></i><i class="spark s2"></i><i class="spark s3"></i>` : CROISSANT;
     const st = S.stage, dirL = Math.random() < 0.5;
     golden = { el, x: dirL ? -90 : st.clientWidth + 10, y: 90 + Math.random() * Math.max(40, st.clientHeight - 230), vx: (dirL ? 1 : -1) * (55 + Math.random() * 35), t: 0 };
     el.onclick = catchGolden;

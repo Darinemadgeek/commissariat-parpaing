@@ -201,8 +201,11 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .float{position:absolute;pointer-events:none;font-family:var(--f-display);font-size:16px;color:var(--gold);text-shadow:0 2px 0 var(--line),0 0 6px var(--line);animation:up 1.4s ease-out forwards;white-space:nowrap}
 .float.bad{color:var(--bad)} .float.blue{color:#9cc2ff}
 @keyframes up{from{transform:translate(-50%,0) scale(.8);opacity:1}to{transform:translate(-50%,-60px) scale(1.1);opacity:0}}
-.golden{position:absolute;z-index:5;width:96px;height:68px;padding:0;border:0;background:none;cursor:pointer;pointer-events:auto;filter:drop-shadow(0 0 10px rgba(255,201,60,.9)) drop-shadow(0 0 2px #fff)}
+.golden{position:absolute;z-index:5;isolation:isolate;width:96px;height:68px;padding:0;border:0;background:none;cursor:pointer;pointer-events:auto;filter:drop-shadow(0 0 10px rgba(255,201,60,.9)) drop-shadow(0 0 2px #fff)}
 .golden svg{width:100%;height:100%;display:block}
+.golden img{width:112%;height:112%;margin:-6% 0 0 -6%;display:block;pointer-events:none}
+.golden::before{content:"";position:absolute;inset:-26% -18%;border-radius:50%;background:radial-gradient(closest-side,rgba(255,236,150,.85),rgba(255,201,60,.35) 55%,rgba(255,201,60,0));animation:aura 1.6s ease-in-out infinite;z-index:-1}
+@keyframes aura{0%,100%{opacity:.75;transform:scale(.94)}50%{opacity:1;transform:scale(1.06)}}
 .golden .spark{position:absolute;width:10px;height:10px;background:#fff;clip-path:polygon(50% 0,62% 38%,100% 50%,62% 62%,50% 100%,38% 62%,0 50%,38% 38%);animation:spark 1.4s ease-in-out infinite}
 .golden .s1{top:-4px;left:14px} .golden .s2{top:8px;right:-2px;animation-delay:.45s} .golden .s3{bottom:6px;left:-2px;animation-delay:.9s}
 @keyframes spark{0%,100%{transform:scale(.2);opacity:0}50%{transform:scale(1.2);opacity:1}}
@@ -327,7 +330,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 }
 @media (prefers-reduced-motion:reduce){
   .radio span{animation-duration:60s}
-  .golden,.advice.bad::before,.tampon.rushing{animation:none}
+  .golden,.golden::before,.advice.bad::before,.tampon.rushing{animation:none}
 }
 </style>
 </head>
@@ -427,6 +430,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 <script src="scene-plans.js"></script>
 <script src="scene-world.js"></script>
 <script src="scene-world2.js"></script>
+<script src="scene-decor.js"></script>
 <script src="scene-building.js"></script>
 <script src="scene-life.js"></script>
 <script src="game-core.js"></script>
