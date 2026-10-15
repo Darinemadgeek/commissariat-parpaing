@@ -407,7 +407,12 @@
     else if (GM.has('pieds') && smellyNow && G.n.masks < G.n.pts) { msg = 'Ça sent les pieds : équipez la PTS de masques à gaz.'; lvl = 'bad'; }
     else if (GM.has('vomi') && GM.propre() < 0.8) { msg = 'Du vomi partout dans les couloirs : recrutez des agents d\'entretien.'; lvl = 'bad'; }
     else if (GM.has('delai') && W.levees > 0 && G.det.length > G.n.inv) { msg = 'Des GAV dépassent le délai légal : il faut plus d\'enquêteurs.'; lvl = 'bad'; }
-    else if (r !== null && W.gav >= 3 && r < 0.85) { msg = 'La PTS est débordée : la prime est en danger. Recrutez des agents PTS.'; lvl = 'bad'; }
+    else if (r !== null && W.gav >= 3 && r < 0.85) {
+      // on juge sur le rythme actuel, pas seulement sur le taux cumulé depuis lundi
+      const pm = GM.ptsPerMin(), im = GM.invPerMin(), need = Math.ceil(im / (60 / GM.ptsTime(false)));
+      if (pm < im * 0.95) { msg = `La PTS ne suit pas les enquêteurs (${fmt(pm, 1)} contre ${fmt(im, 1)} GAV/min) : il faut environ ${need} agents PTS.`; lvl = 'bad'; }
+      else { msg = `Signalisation de la semaine à ${pct(r)} : la PTS suit le rythme maintenant, le taux va remonter.`; lvl = 'warn'; }
+    }
     else if (G.built.accueil && s !== null && s < 0.8) { msg = "L'accueil déborde : des usagers repartent fâchés."; lvl = 'warn'; }
     else if (G.det.length > G.n.inv) { msg = "Plus de GAV que d'enquêteurs : recrutez des enquêteurs."; lvl = 'warn'; }
     else if (G.built.plaintes && G.plaQ > G.n.pla * 3) { msg = "Les plaintes s'empilent : recrutez des agents des plaintes."; lvl = 'warn'; }
