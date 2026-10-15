@@ -19,19 +19,14 @@
     walkers.push({ f, pts, i: 0, t: 0, sp: speed || 3.4 });
     if (walkers.length > 46) { const w = walkers.shift(); scene.remove(w.f); }
   }
-  const P = {
-    yard: [V(12, 0.12, -22), V(15.2, 0.12, -14), V(15.2, Y, -10.6), V(15.2, Y, -6.6)],
-    out: [V(12, Y, -6.6), V(12, Y, 0), V(0, Y, 0), V(0, Y, 9.6), V(0, 0.12, 13), V(7, 0.06, 18.5), V(34, 0.06, 25)],
-  };
-  S.arrive = () => {
-    walk('cop', [...P.yard, V(9, Y, -6.6)], 3.2);
-    walk('suspect', [V(11, 0.12, -22.6), V(14.4, 0.12, -14), V(14.4, Y, -10.6), V(14.4, Y, -6.9), V(8.4, Y, -6.9)], 3.2);
-  };
-  S.release = () => walk('suspect', P.out, 3.8);
-  S.toPts = () => walk('suspect', [V(9, Y, -6.6), V(12, Y, -6.6), V(12, Y, 0), V(13.2, Y, 0), V(13.2, Y, 2.2), V(11, Y, 3.2)], 3.4);
-  S.citizenIn = () => walk('civ', [V(-34, 0.06, 25), V(-7, 0.06, 18), V(0, 0.12, 13), V(0, Y, 10), V(0, Y, 8.6)], 3.8);
-  S.toPlaintes = () => walk('civ', [V(-3, Y, 4.6), V(-6, Y, 5.4), V(-8.6, Y, 5.4), V(-10.5, Y, 6.4)], 3.2);
-  S.angry = () => walk('civ', [V(0, Y, 8.6), V(0, Y, 10.6), V(0, 0.12, 13), V(-8, 0.06, 18.5), V(-34, 0.06, 25)], 5.5);
+  // trajets calculés par le plan du commissariat (de porte en porte, jamais à travers un mur)
+  const route = k => (S.B && S.B.paths ? S.B.paths[k] : [V(0, Y, 0)]);
+  S.arrive = () => { walk('cop', route('cop'), 3.2); walk('suspect', route('sus'), 3.2); };
+  S.release = () => walk('suspect', route('release'), 3.8);
+  S.toPts = () => walk('suspect', route('toPts'), 3.4);
+  S.citizenIn = () => walk('civ', route('citizenIn'), 3.8);
+  S.toPlaintes = () => walk('civ', route('toPlaintes'), 3.2);
+  S.angry = () => walk('civ', route('angry'), 5.5);
   S.parpaingHit = () => { bounce = 1; };
   const dummy = new THREE.Object3D(); dummy.visible = false;
   pickables.push({ get obj() { return S.B ? S.B.parp.g : dummy; }, cb: () => S.onParpaing && S.onParpaing() });
@@ -39,7 +34,9 @@
   // ---------- changement de commissariat ----------
   S.setSite = (site) => {
     S.world.build(site.biome);
-    S.building.build(site.style, site.name);
+    const R = S.building.build(site.style, site.name);
+    for (const k in R.zones) { if (tags[k]) tags[k].pos.copy(R.zones[k]); if (anchors[k]) anchors[k].set(R.zones[k].x, 2.2, R.zones[k].z); }
+    tags.hq.pos.x = anchors.hq.x = R.tower.position.x; tags.hq.pos.z = R.tower.position.z; anchors.hq.z = R.tower.position.z + 6;
     L = {}; walkers.splice(0).forEach(w => scene.remove(w.f));
   };
 
@@ -138,9 +135,9 @@
     R.queue.forEach((q, i) => { if (q.visible) q.position.y = Y + Math.abs(Math.sin(t * 2 + i)) * 0.04; });
     R.cleaners.forEach(f => {
       if (!f.visible) return;
-      const [a, b] = f.userData.lane, s = Math.sin(t * 0.22 + f.userData.ph);
-      f.position.x = a + (b - a) * (0.5 + 0.5 * s);
-      f.rotation.y = Math.cos(t * 0.22 + f.userData.ph) > 0 ? Math.PI / 2 : -Math.PI / 2;
+      const [a, b] = f.userData.lane, s = Math.sin(t * 0.22 + f.userData.ph), fw = Math.cos(t * 0.22 + f.userData.ph) > 0;
+      f.position.lerpVectors(a, b, 0.5 + 0.5 * s);
+      f.rotation.y = Math.atan2(b.x - a.x, b.z - a.z) + (fw ? 0 : Math.PI);
       f.userData.swing.rotation.y = Math.sin(t * 6) * 0.35;
     });
     S.people.puffs(R.cells.flatMap(c => (c.visible ? c.userData.figs : [])), t);
