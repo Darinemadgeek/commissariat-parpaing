@@ -205,7 +205,8 @@
       const Q = [['auto', 'Auto'], ['eco', 'Économie'], ['normal', 'Normale'], ['beau', 'Belle']];
       qb.innerHTML = '<b>Qualité graphique</b><span>« Économie » allège les décors, coupe les ombres et baisse la résolution : à choisir si le jeu rame sur un vieux téléphone.</span><div class="qbtns" role="group" aria-label="Qualité graphique">'
         + Q.map(([k, l]) => `<button type="button" data-q="${k}" aria-pressed="${S.quality() === k}">${l}</button>`).join('') + '</div>';
-      qb.querySelectorAll('button').forEach(b => { b.onclick = () => { S.setQuality(b.dataset.q); S.setSite(GM.here()); render(); toast('Qualité graphique : ' + b.textContent); }; });
+      const qbs = qb.querySelectorAll('button');
+      qbs.forEach(b => { b.onclick = () => { S.setQuality(b.dataset.q); qbs.forEach(o => o.setAttribute('aria-pressed', String(o === b))); S.setSite(GM.here()); toast('Qualité graphique : ' + b.textContent); }; });
       list.appendChild(qb);
       const tb = document.createElement('button'); tb.type = 'button'; tb.className = 'topo-btn'; tb.textContent = 'Relire la note de service du poste'; tb.onclick = showTopo; list.appendChild(tb);
       addEl('div', 'dossier', () => {
