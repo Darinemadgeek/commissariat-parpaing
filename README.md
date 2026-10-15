@@ -7,7 +7,7 @@ Vous êtes le commissaire divisionnaire Parpaing. Vous partez d'un petit poste d
 
 ## Le principe
 
-- **Le cycle d'une GAV** : une patrouille ramène un suspect en cellule. Un enquêteur l'auditionne et, en même temps, un agent PTS le signalise (empreintes, photos, ADN). La GAV sort quand l'audition est finie : si la PTS n'a pas terminé, elle sort non signalisée.
+- **Le cycle d'une GAV** : une patrouille ramène un suspect en cellule. Un enquêteur l'auditionne et, en même temps, un agent PTS le signalise (empreintes, photos, ADN). À la fin de l'audition, si sa signalisation a commencé, la GAV attend qu'elle se termine ; si aucun agent PTS n'a pu s'en occuper, elle sort non signalisée. Il faut donc assez d'agents PTS pour suivre le rythme des enquêteurs.
 - L'**accueil** reçoit le public et le **bureau des plaintes** traite les plaintes. Une plainte sur deux donne une piste : les patrouilles vont 50 % plus vite tant qu'il en reste.
 - Chaque fin de semaine, un procès-verbal fixe la **prime**. Elle n'est versée que si la jauge d'objectif est pleine. Son montant baisse si la PTS ne suit pas (rien sous 70 % de signalisation) ou si des usagers repartent fâchés.
 - L'objectif suit vos résultats, sans jamais dépasser ce que vos équipes peuvent traiter.

@@ -5,6 +5,7 @@ window.PD = (function () {
     PATROL_TIME: 8,         // s par interpellation et par patrouille
     ENQ_TIME: 12,           // s d'audition par GAV
     PTS_TIME: 14,           // s de signalisation par GAV (plus long qu'une audition : il faut plus de PTS que d'enquêteurs)
+    PTS_WAIT: 20,           // audition finie, la GAV attend au plus 20 s la fin d'une signalisation commencée
     CITIZEN_TIME: 5,        // s entre deux usagers à l'accueil
     ACC_TIME: 4,            // s pour enregistrer un usager
     PLA_TIME: 10,           // s pour traiter une plainte
@@ -257,7 +258,8 @@ window.PD = (function () {
 
   const PRIME_TALK = {
     great: ['Le préfet est ravi. Il a presque souri.', 'Statistiques impeccables. On parle de vous au ministère.', 'Bravo commissaire. Une médaille en chocolat vous attend.'],
-    ok: ['Correct. Le préfet a haussé un sourcil, en bien.', 'Pas mal, mais la PTS a eu chaud.'],
+    ok: ['Correct. Le préfet a haussé un sourcil, en bien.', 'Pas mal. Le préfet a dit « bon ». Venant de lui, c\'est énorme.'],
+    okPts: ['Pas mal, mais la PTS a eu chaud.', 'Bien, mais il manque des empreintes dans le fichier.'],
     meh: ['Le préfet a soupiré. Longuement.', 'Des GAV non signalisées... le fichier pleure.'],
     zero: ['Prime refusée. Le préfet demande « c\'est quoi ce bazar ».', "Zéro prime. Même la machine à café a honte."],
   };

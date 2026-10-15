@@ -30,7 +30,7 @@
   function showPV() {
     const p = G.pending; if (!p) return;
     const ok = p.prime > 0;
-    const talk = pick(PD.PRIME_TALK[!ok ? 'zero' : p.n === 3 ? 'great' : p.n >= 1 ? 'ok' : 'meh']);
+    const talk = pick(PD.PRIME_TALK[!ok ? 'zero' : p.n === 3 ? 'great' : !p.st[1] ? 'okPts' : 'ok']); // le commentaire colle à ce qui a manqué
     const star = on => `<span style="color:${on ? '#c48a00' : '#b9b3a0'}">★</span>`;
     $('pvSlot').innerHTML = `<div class="pv" role="dialog" aria-label="Rapport de fin de semaine">
       <h2>PROCÈS-VERBAL · SEMAINE ${p.no}</h2>
@@ -167,7 +167,7 @@
       }, true);
       const h = GM.here();
       if (h.problems.length) addEl('p', 'mini', '<b>Problèmes de ce commissariat.</b><br>' + h.problems.map(k => `<b>${PROBLEMS[k].name} :</b> ${PROBLEMS[k].desc}`).join('<br>'));
-      addEl('p', 'mini', () => `<b>Cycle d'une GAV.</b> Une patrouille ramène un suspect en cellule. Un enquêteur l'auditionne (${fmt(GM.enqTime(false), 1)} s) et, en même temps, un agent PTS le signalise (${fmt(GM.ptsTime(false), 1)} s). La GAV sort quand l'audition est finie : si la PTS n'a pas terminé, elle sort non signalisée. Comme une signalisation est plus longue qu'une audition, il faut un peu plus d'agents PTS que d'enquêteurs, ou la borne biométrique.<br><br><b>Étoiles de la semaine.</b> 1 étoile si la jauge d'objectif est pleine, 1 si la signalisation atteint 95 %, 1 pour le critère local : ${(h.star3.id === 'igpn' ? 'IGPN : ' + GM.igpnLabel() : h.star3.label).toLowerCase()}. À ${T.STARS_TO_MOVE} étoiles, vous pouvez demander votre mutation sur la carte.<br><br><b>Missions du préfet.</b> Certains lundis, une ou deux missions apparaissent dans la carte de la semaine. Réussies dimanche soir, elles rapportent des étoiles en plus ; la « Semaine étoilée » double toutes les étoiles.<br><br><b>Prime.</b> Versée seulement si la jauge d'objectif est pleine : 50 % des recettes de la semaine, réduite si la PTS ne suit pas (rien sous 70 %) ou si des usagers repartent fâchés, +25 % par étoile.<br><br><b>Astuces.</b> Les plaintes donnent des pistes : les patrouilles vont 50 % plus vite tant qu'il en reste. Le tampon accélère un peu la GAV la plus ancienne. Attrapez les croissants dorés (attention, certains sont des pièges).`, true);
+      addEl('p', 'mini', () => `<b>Cycle d'une GAV.</b> Une patrouille ramène un suspect en cellule. Un enquêteur l'auditionne (${fmt(GM.enqTime(false), 1)} s) et, en même temps, un agent PTS le signalise (${fmt(GM.ptsTime(false), 1)} s). À la fin de l'audition, si sa signalisation a commencé, la GAV attend qu'elle se termine (${T.PTS_WAIT} s au plus) ; si aucun agent PTS n'a pu s'en occuper, elle sort non signalisée. Comme une signalisation est plus longue qu'une audition, il faut un peu plus d'agents PTS que d'enquêteurs, ou la borne biométrique.<br><br><b>Étoiles de la semaine.</b> 1 étoile si la jauge d'objectif est pleine, 1 si la signalisation atteint 95 %, 1 pour le critère local : ${(h.star3.id === 'igpn' ? 'IGPN : ' + GM.igpnLabel() : h.star3.label).toLowerCase()}. À ${T.STARS_TO_MOVE} étoiles, vous pouvez demander votre mutation sur la carte.<br><br><b>Missions du préfet.</b> Certains lundis, une ou deux missions apparaissent dans la carte de la semaine. Réussies dimanche soir, elles rapportent des étoiles en plus ; la « Semaine étoilée » double toutes les étoiles.<br><br><b>Prime.</b> Versée seulement si la jauge d'objectif est pleine : 25 % des recettes de la semaine, réduite si la PTS ne suit pas (rien sous 70 %) ou si des usagers repartent fâchés, +20 % par étoile.<br><br><b>Astuces.</b> Les plaintes donnent des pistes : les patrouilles vont 50 % plus vite tant qu'il en reste. Le tampon accélère un peu la GAV la plus ancienne. Attrapez les croissants dorés (attention, certains sont des pièges).`, true);
     }
     list.scrollTop = scroll;
   }
@@ -398,6 +398,7 @@
     let msg = 'Tout roule, commissaire.', lvl = '';
     const smellyNow = G.det.some(d => d.smelly);
     const foreignWaiting = GM.has('interpretes') && G.det.filter(d => d.foreign && d.e < 1).length > G.n.interp;
+    const toAudit = G.det.filter(d => d.e < 1).length; // sans compter celles qui attendent seulement la PTS
     if (GM.lost()) { msg = 'Cellules pleines : des suspects repartent libres ! Construisez des cellules.'; lvl = 'bad'; }
     else if (GM.has('neige') && G.stormLeft > 0 && G.n.snow < G.n.patrols) { msg = 'Tempête de neige : sans motoneiges, les patrouilles sont bloquées.'; lvl = 'warn'; }
     else if (foreignWaiting) { msg = 'Des passagers étrangers attendent un interprète pour leur audition.'; lvl = 'warn'; }
@@ -406,7 +407,7 @@
     else if (G.manifLeft > 0) { msg = 'Manifestation en cours : il faut de la place en cellule.'; lvl = 'warn'; }
     else if (GM.has('pieds') && smellyNow && G.n.masks < G.n.pts) { msg = 'Ça sent les pieds : équipez la PTS de masques à gaz.'; lvl = 'bad'; }
     else if (GM.has('vomi') && GM.propre() < 0.8) { msg = 'Du vomi partout dans les couloirs : recrutez des agents d\'entretien.'; lvl = 'bad'; }
-    else if (GM.has('delai') && W.levees > 0 && G.det.length > G.n.inv) { msg = 'Des GAV dépassent le délai légal : il faut plus d\'enquêteurs.'; lvl = 'bad'; }
+    else if (GM.has('delai') && W.levees > 0 && toAudit > G.n.inv) { msg = 'Des GAV dépassent le délai légal : il faut plus d\'enquêteurs.'; lvl = 'bad'; }
     else if (r !== null && W.gav >= 3 && r < 0.85) {
       // on juge sur le rythme actuel, pas seulement sur le taux cumulé depuis lundi
       const pm = GM.ptsPerMin(), im = GM.invPerMin(), need = Math.ceil(im / (60 / GM.ptsTime(false)));
@@ -414,7 +415,7 @@
       else { msg = `Signalisation de la semaine à ${pct(r)} : la PTS suit le rythme maintenant, le taux va remonter.`; lvl = 'warn'; }
     }
     else if (G.built.accueil && s !== null && s < 0.8) { msg = "L'accueil déborde : des usagers repartent fâchés."; lvl = 'warn'; }
-    else if (G.det.length > G.n.inv) { msg = "Plus de GAV que d'enquêteurs : recrutez des enquêteurs."; lvl = 'warn'; }
+    else if (toAudit > G.n.inv + 1) { msg = `${toAudit} GAV attendent leur audition pour ${G.n.inv} enquêteur${G.n.inv > 1 ? 's' : ''} : recrutez des enquêteurs.`; lvl = 'warn'; }
     else if (G.built.plaintes && G.plaQ > G.n.pla * 3) { msg = "Les plaintes s'empilent : recrutez des agents des plaintes."; lvl = 'warn'; }
     else if (!G.det.length && !G.hall) { msg = 'Cellules vides : il faut plus de patrouilles.'; lvl = 'warn'; }
     else if (!G.built.accueil && G.money >= 60) msg = "Vous pouvez ouvrir l'accueil (onglet Bâtiment).";

@@ -118,7 +118,7 @@ window.GM = (function () {
     const scan = has('vip') && scandals(w) > 0 ? 0.5 : 1;
     const dossiers = w.gav + w.pla, quota = st[0];
     // pas de jauge pleine, pas de prime ; la qualité PTS, les usagers et les scandales en modulent le montant
-    const prime = quota ? w.earned * T.PRIME_BASE * 2 * q * sat * scan * (1 + 0.25 * n) * up('crois') : 0;
+    const prime = quota ? w.earned * T.PRIME_BASE * q * sat * scan * (1 + 0.2 * n) * up('crois') : 0;
     return { prime, q, sat, scan, quota, dossiers, r, s, st, n };
   }
 
@@ -206,13 +206,14 @@ window.GM = (function () {
     const invN = invAvail();
     for (const d of G.det) {
       d.t += dt;
-      if (ib >= invN) continue;
+      if (d.e >= 1 || ib >= invN) continue; // audition finie : elle attend la PTS sans occuper d'enquêteur
       if (d.foreign) { if (ip >= G.n.interp) continue; ip++; }
       d.e += eSp * dt * (d.lawyer ? lk : 1); ib++;
     }
     G._invBusy = ib; G._interpBusy = ip; G._meeting = meetingBlocked();
 
-    // PTS : on finit ce qui est commencé, puis on prend les derniers arrivés.
+    // PTS : on finit ce qui est commencé, puis on prend les plus anciennes GAV (celles qui vont sortir).
+    // Une GAV dont la signalisation a commencé attend sa fin avant de sortir (au plus T.PTS_WAIT s).
     // Sur une GAV qui pue des pieds, un agent sans masque ralentit et risque le malaise.
     G.ptsDown = G.ptsDown.map(x => x - dt).filter(x => x > 0);
     const avail = ptsAvail();
@@ -228,7 +229,7 @@ window.GM = (function () {
       d.p = Math.min(1, d.p + sp * dt); pb++;
     };
     for (const d of G.det) if (d.p > 0 && d.p < 1 && pb < avail) work(d);
-    for (let i = G.det.length - 1; i >= 0 && pb < avail; i--) if (G.det[i].p === 0) work(G.det[i]);
+    for (const d of G.det) if (d.p === 0 && pb < avail) work(d);
     G._ptsBusy = pb;
 
     const lim = gavLimit();
@@ -236,6 +237,7 @@ window.GM = (function () {
       const d = G.det[i];
       if (d.vip && !d.scandal && d.t > T.VIP_MAX_T) { d.scandal = true; W.scandales++; ui.float('cells', 'Scandale : la star attend !', 'bad'); }
       if (d.e >= 1) {
+        if (d.p > 0 && d.p < 1) { d.w = (d.w || 0) + dt; if (d.w < T.PTS_WAIT) continue; } // on attend la fin de la signalisation
         G.det.splice(i, 1); W.gav++; G.total.gav++;
         if (d.p >= 1) W.sig++; else W.unsig++;
         if (d.vip && d.p < 1 && !d.scandal) { W.scandales++; ui.float('cells', 'Scandale : star non signalisée', 'bad'); }

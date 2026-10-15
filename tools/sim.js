@@ -23,6 +23,8 @@ function think() {
   if (PD.tier(G.tier + 1).cost < G.money * 0.6) { if (GM.upTier()) tierAt[`${G.site}:${G.tier}`] = t; }
   // goulots d'étranglement
   const W = G.week, need = [];
+  // un joueur attentif : la PTS et les enquêteurs d'abord, puis la place en cellule
+  if (GM.ptsPerMin() < GM.invPerMin() * 1.1) need.push('pts');
   if (W.lost > lastLost) need.push('cells'); lastLost = W.lost;
   if (GM.has('vomi') && G.vomit > 4) need.push('clean');
   if (GM.has('pieds') && G.n.masks < G.n.pts) need.push('masks');
