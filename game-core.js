@@ -20,7 +20,7 @@ window.GM = (function () {
       manifIn: nextManif(), manifLeft: 0, stormIn: T.STORM_EVERY, stormLeft: 0, colisIn: T.COLIS_EVERY, colisLeft: 0,
       meetIn: T.MEETING_EVERY, meetLeft: 0, igpn: 'sig98',
       acc: { patrol: 0, cit: 0, manif: 0 },
-      week: newWeek(1), objective: T.OBJ_START, buffs: [], pending: null, quests: [],
+      week: newWeek(1), rush: 0, objective: T.OBJ_START, buffs: [], pending: null, quests: [],
       total: keep.total || { gav: 0, pla: 0, primes: 0 }, goldenIn: 40, lastSave: Date.now(), rateEst: 0,
     };
   }
@@ -30,7 +30,7 @@ window.GM = (function () {
   reset(fresh());
 
   // ---------- multiplicateurs (une seule source pour le jeu et les infobulles) ----------
-  let perf = 0, earnedLog = [], rateLong = 0, rateLongT = 0; // rateLong : recette moyenne sur ~2 min, sert aux gains d'absence
+  let perf = 0, earnedLog = [], rateLong = 0, rateLongT = 0, clickTok = 12; // rateLong : recette moyenne sur ~2 min, sert aux gains d'absence
   const here = () => site(G.site);
   const has = p => here().problems.includes(p);
   const hardK = () => 1 + 0.25 * (here().hard || 0);
@@ -40,14 +40,15 @@ window.GM = (function () {
   const down = id => Math.pow(1 - UPG[id].per, lv(id)); // réduction d'un équipement (multiplicative)
   const valMult = () => Math.pow(1.6, G.tier) * up('lrp') * (1 + 0.5 * G.galons) * Math.pow(2, here().hard || 0)
     * (buffOn('prefet') ? 3 : 1) * (buffOn('major') ? 3 : 1);
-  const allSpeed = () => (buffOn('turbo') ? 2 : 1) * (buffOn('pizza') ? 1.25 : 1) * (buffOn('laurine') ? 0.95 : 1);
+  const allSpeed = () => (buffOn('rush') ? 2 : 1) * (buffOn('turbo') ? 2 : 1) * (buffOn('pizza') ? 1.25 : 1) * (buffOn('laurine') ? 0.95 : 1);
   const ptsBuff = () => (buffOn('maxime') ? 1.5 : 1) * (buffOn('lrpmail') ? 1.5 : 1) * (buffOn('corbeaux') ? 0.9 : 1);
   const cellCap = () => 2 + lv('beds');
   const capacity = () => G.n.cells * cellCap();
   const hallCap = () => T.HALL + UPG.hall.per * lv('hall') + UPG.xxl.per * lv('xxl');
   const gavValue = () => T.GAV_VALUE * valMult();
   const plaValue = () => T.PLAINTE_VALUE * valMult() * (has('touristes') ? T.TOURIST_VALUE : 1);
-  const tamponValue = () => Math.max(1, gavValue() * 0.05 * up('stamp'));
+  // un coup de tampon suit la recette passive (sans les clics, sinon elle s'emballerait), jamais moins qu'avant
+  const tamponValue = () => Math.max(1, gavValue() * 0.05 * up('stamp'), passiveRate() * T.CLICK_SHARE * up('stamp'));
   const tamponPush = () => Math.min(0.12, 0.04 + 0.01 * lv('stamp'));
   const propre = () => Math.max(0, 1 - G.vomit * 0.04);
   const slip = () => (has('vomi') ? 1 - Math.min(0.6, G.vomit * 0.03) : 1);
@@ -179,9 +180,9 @@ window.GM = (function () {
   }
 
   // ---------- simulation ----------
-  function earn(v, zone, cls, windfall) {
+  function earn(v, zone, cls, windfall, click) {
     G.money += v; G.runEarned += v; G.week.earned += v;
-    if (!windfall) earnedLog.push([perf, v]); // une saisie du croissant ne gonfle pas la recette par seconde
+    if (!windfall) earnedLog.push([perf, v, click ? 1 : 0]); // une saisie du croissant ne gonfle pas la recette par seconde
     if (zone) ui.float(zone, '+' + PD.eur(v), cls);
   }
   function newDet() {
@@ -215,7 +216,7 @@ window.GM = (function () {
 
     // Patrouilles : plus vite avec des pistes, bloquées par la neige (sauf motoneiges)
     const patrolsOn = storm ? Math.min(G.n.patrols, G.n.snow) : G.n.patrols;
-    const pRate = (patrolsOn / T.PATROL_TIME) * up('gyro') * (buffOn('bac') ? 3 : 1) * (G.pistes > 0 ? T.PISTE_BOOST : 1) * (buffOn('laurine') ? 0.95 : 1);
+    const pRate = (patrolsOn / T.PATROL_TIME) * up('gyro') * (buffOn('bac') ? 3 : 1) * (buffOn('rush') ? 2 : 1) * (G.pistes > 0 ? T.PISTE_BOOST : 1) * (buffOn('laurine') ? 0.95 : 1);
     G._patrolWait = false;
     if (manif) {
       // Manif : les patrouilles encadrent le cortège et les manifestants arrivent deux fois plus vite que les auditions.
@@ -340,7 +341,10 @@ window.GM = (function () {
     lostFlash = Math.max(0, lostFlash - dt);
     while (earnedLog.length && earnedLog[0][0] < perf - 20) earnedLog.shift();
     // moyenne lente : un bonus de 20 s du croissant ne fait pas exploser les gains d'absence
-    if ((rateLongT += dt) >= 1) { rateLong += (rate() - rateLong) * Math.min(1, rateLongT / 120); rateLongT = 0; }
+    // jauge « Coup de bourre » : elle se vide quand on arrête de tamponner ; anti-autoclic : jetons de clic
+    if (!buffOn('rush')) G.rush = Math.max(0, (G.rush || 0) - T.RUSH_DECAY * dt);
+    clickTok = Math.min(T.CLICK_MAX, clickTok + T.CLICK_MAX * dt);
+    if ((rateLongT += dt) >= 1) { rateLong += (passiveRate() - rateLong) * Math.min(1, rateLongT / 120); rateLongT = 0; }
   }
   function plainteDone(silent) {
     G.week.pla++; G.total.pla++;
@@ -456,8 +460,14 @@ window.GM = (function () {
   }
   function tampon() {
     if (buffOn('pigeon')) return 0;
+    if (clickTok < 1) return 0; // au-delà de T.CLICK_MAX coups par seconde, les coups ne comptent plus
+    clickTok -= 1;
     const v = tamponValue();
-    earn(v, 'parp');
+    earn(v, 'parp', null, false, true);
+    if (!buffOn('rush')) {
+      G.rush = Math.min(1, (G.rush || 0) + T.RUSH_CLICK);
+      if (G.rush >= 1) { G.rush = 0; addBuff('rush', T.RUSH_LEN, 'Coup de bourre : tout ×2'); ui.toast(`COUP DE BOURRE ! Tout le commissariat tourne deux fois plus vite pendant ${T.RUSH_LEN} secondes.`); }
+    }
     G.week.tampons = (G.week.tampons || 0) + 1;
     const d = G.det[0], k = tamponPush();
     if (d) { d.e = Math.min(1, d.e + k); if (d.p > 0) d.p = Math.min(1, d.p + k); }
@@ -466,6 +476,7 @@ window.GM = (function () {
   // tout effacer : nouvelle partie au premier commissariat
   function newGame() { reset(fresh()); earnedLog = []; rateLong = 0; save(); }
   const rate = () => earnedLog.reduce((s, e) => s + e[1], 0) / Math.min(20, Math.max(5, perf));
+  const passiveRate = () => earnedLog.reduce((s, e) => s + (e[2] ? 0 : e[1]), 0) / Math.min(20, Math.max(5, perf)); // sans les coups de tampon
 
   // ---------- sauvegarde ----------
   function save() {
@@ -499,7 +510,7 @@ window.GM = (function () {
     gavValue, plaValue, tamponValue, tamponPush, capacity, hallCap, cellCap, unitCost, upCost, bulk, unitOn, upOn, lv, up, down,
     buyUnit, buyUp, sellUp, sellValue, build, upTier, canMove, move, tampon, rate, save, load, newGame, golden, weekCapacity,
     enqTime, ptsTime, plaTime, invPerMin, ptsPerMin, patrolPerMin, citPerMin, accPerMin, plaPerMin, cleanPerMin, lawK, valMult,
-    perf: () => perf, lost: () => lostFlash > 0, buffOn, manifRate, manifExtra, baseRate: () => rateLong,
+    perf: () => perf, lost: () => lostFlash > 0, buffOn, manifRate, manifExtra, baseRate: () => rateLong, passiveRate,
     addBuff,
     earn, slip, questInfo,
   };

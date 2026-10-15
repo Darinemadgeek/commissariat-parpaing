@@ -48,7 +48,13 @@ window.PD = (function () {
     MANIF_DAY: [0.5, 5],    // une manif par semaine, entre le lundi midi et le samedi midi
     MANIF_LEN: 25,
     MANIF_WAVE: 2,          // pendant une manif, les manifestants arrivent deux fois plus vite que les auditions
-    LOST_TOL: 0.1,          // étoile « relâchés » : au plus 10 % des interpellations de la semaine
+    LOST_TOL: 0.1,
+    // clicker : un coup de tampon vaut une part de la recette par seconde (hors clics), avec un plafond anti-autoclic
+    CLICK_SHARE: 0.05,      // 5 % de la recette passive par seconde et par coup, +50 % par niveau de tampon
+    CLICK_MAX: 12,          // coups comptés par seconde au maximum
+    RUSH_CLICK: 0.02,       // jauge « Coup de bourre » : remplissage par coup…
+    RUSH_DECAY: 0.04,       // …et vidage par seconde quand on arrête
+    RUSH_LEN: 15,           // jauge pleine : tout le commissariat ×2 pendant 15 s          // étoile « relâchés » : au plus 10 % des interpellations de la semaine
   };
 
   const C = (bg, fg, path) => ({ bg, svg: `<svg viewBox="0 0 32 32" aria-hidden="true"><g fill="${fg}">${path}</g></svg>` });
@@ -166,7 +172,7 @@ window.PD = (function () {
 
   // per = effet par niveau : le jeu ET les infobulles lisent cette même valeur
   const UPGRADES = [
-    { id: 'stamp', name: 'Tampon en titane', base: 80, g: 6, per: 0.5, desc: 'Coup de tampon : +50 % de gain par niveau' },
+    { id: 'stamp', name: 'Tampon en titane', base: 80, g: 6, per: 0.5, desc: 'Coup de tampon : +50 % de gain par niveau (un coup vaut 5 % de la recette par seconde au niveau 0)' },
     { id: 'coffee', name: 'Machine à café', base: 300, g: 3.2, per: 0.2, desc: "+20 % de vitesse d'audition par niveau" },
     { id: 'gyro', name: 'Gyrophares turbo', base: 300, g: 3.2, per: 0.2, desc: '+20 % de vitesse des patrouilles par niveau' },
     { id: 'bio', name: 'Borne biométrique', base: 450, g: 3.2, per: 0.25, desc: '+25 % de vitesse de signalisation par niveau' },

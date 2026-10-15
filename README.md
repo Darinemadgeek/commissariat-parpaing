@@ -34,6 +34,7 @@ Vous êtes le commissaire divisionnaire Parpaing. Vous partez d'un petit poste d
 Au-delà, des secteurs sans fin tirent 3 ou 4 problèmes au hasard.
 
 - Le bâtiment grandit par paliers : tour administrative, antenne, hélicoptère, annexe vitrée, statue dorée. La partie n'a pas de fin.
+- Pour ceux qui aiment cliquer, le **coup de tampon** rapporte 5 % de la recette par seconde (plus avec le tampon en titane). Tamponner vite remplit la jauge **Coup de bourre** : pleine, tout le commissariat va deux fois plus vite pendant 15 s.
 - Le **croissant doré** qui traverse l'écran cache 16 surprises :
   - des bonus : visite du préfet, aura du major, Maxime et le mail LRP, pizzas, BAC, stagiaire, barbecue, IGPN…
   - quelques pièges : Laurine, les corbeaux, le pigeon voleur de tampon, la photocopieuse en panne ;

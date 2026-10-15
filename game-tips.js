@@ -50,6 +50,7 @@ window.Tips = (function () {
     st2: () => box({ title: 'Étoile 2 : signalisation', text: 'Gagnée si au moins 95 % des personnes auditionnées cette semaine ont été signalisées.', calc: G.week.gav ? `${G.week.sig} / ${G.week.gav} = ${pct(GM.sigRate(G.week))}` : 'Aucune GAV auditionnée', tip: ptsAdvice() }),
     st3: () => box({ title: `Étoile 3 : ${GM.here().star3.id === 'igpn' ? 'IGPN : ' + GM.igpnLabel() : GM.here().star3.label}`, text: `Le critère propre à ${GM.here().name}, mesuré sur toute la semaine.`, tip: GM.here().star3.id === 'sat' && !G.built.accueil ? "Sans accueil, aucun usager : ouvrez l'accueil dans l'onglet Bâtiment pour pouvoir gagner cette étoile." : '' }),
     cstars: () => box({ title: 'Étoiles de mutation', text: `Étoiles gagnées dans ce commissariat : 3 par semaine au maximum, plus les missions du préfet. À ${T.STARS_TO_MOVE}, la carte permet d'être muté au poste suivant.`, calc: `${Math.min(G.cstars, T.STARS_TO_MOVE)} / ${T.STARS_TO_MOVE} étoiles` }),
+    tampon: () => { const rush = G.buffs.find(b => b.id === 'rush'); return box({ title: 'Coup de tampon', text: `Chaque coup rapporte ${pct(T.CLICK_SHARE * GM.up('stamp'))} de la recette par seconde de vos services, fait avancer la plus vieille GAV et remplit la jauge « Coup de bourre ». Jauge pleine : tout le commissariat va deux fois plus vite pendant ${T.RUSH_LEN} s. Elle se vide si vous arrêtez.`, rows: [['Gain par coup', eur(GM.tamponValue(), 1)], ['Coup de bourre', rush ? `en cours : encore ${Math.ceil(rush.until - GM.perf())} s` : pct(G.rush || 0)]], calc: `${eur(GM.passiveRate(), 1)}/s de recette (hors clics) × ${pct(T.CLICK_SHARE)} × ${GM.up('stamp').toString().replace('.', ',')} (tampon niv. ${GM.lv('stamp')}) · au plus ${T.CLICK_MAX} coups comptés par seconde`, tip: "Il faut tamponner vite et sans s'arrêter pour remplir la jauge : environ 3 coups par seconde au minimum." }); },
     q0: () => quest(0), q1: () => quest(1),
   };
   function quest(i) {
@@ -74,7 +75,7 @@ window.Tips = (function () {
   };
   // ---------- équipements : ce qui change, avant → après ----------
   const UPM = {
-    stamp: [['Gain par clic', () => eur(GM.tamponValue(), 1)], ['Accélération de la plus vieille GAV', () => pct(GM.tamponPush())]],
+    stamp: [['Gain par clic', () => eur(GM.tamponValue(), 1)], ['Part de la recette par seconde', () => pct(T.CLICK_SHARE * GM.up('stamp'))], ['Accélération de la plus vieille GAV', () => pct(GM.tamponPush())]],
     coffee: [["Durée d'une audition", () => sec(GM.enqTime(false))], ['Auditions', () => pm(GM.invPerMin())]],
     gyro: [['Interpellations', () => pm(GM.patrolPerMin())]],
     bio: [["Durée d'une signalisation", () => sec(GM.ptsTime(false))], ['Signalisations', () => pm(GM.ptsPerMin())]],
@@ -95,7 +96,7 @@ window.Tips = (function () {
     mailr: [["Durée d'une réunion", () => sec(T.MEETING_LEN * GM.down('mailr'))]],
   };
   const UPA = {
-    stamp: 'gain des clics sur le tampon (le jeu tourne très bien sans cliquer).', coffee: 'auditions, donc argent et dossiers. La PTS devra suivre.', gyro: 'interpellations, donc remplissage des cellules.',
+    stamp: 'gain des coups de tampon, qui suivent votre recette par seconde (le jeu tourne très bien sans cliquer).', coffee: 'auditions, donc argent et dossiers. La PTS devra suivre.', gyro: 'interpellations, donc remplissage des cellules.',
     bio: 'taux de signalisation (étoile 2, prime).', tickets: 'usagers bien reçus et plaintes déposées.', hall: 'relâchés faute de place et usagers fâchés.',
     lrp: 'toutes les recettes (GAV et plaintes) et donc la prime.', form: 'plaintes traitées, dossiers et pistes.', com: "public à l'accueil. Attention : il faut assez d'agents d'accueil.",
     beds: 'places en cellule, sans acheter de cellule.', crois: 'montant de la prime hebdo.', mop: 'propreté et vitesse des services.', deo: 'odeur, donc vitesse de la PTS et malaises.',
