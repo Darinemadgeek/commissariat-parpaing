@@ -20,16 +20,16 @@ Vous êtes le commissaire divisionnaire Parpaing. Vous partez d'un petit poste d
 
 | # | Commissariat | Problème qui arrive |
 |---|---|---|
-| 1 | Saint-Parpaing-les-Choux (campagne) | aucun, on apprend le métier |
-| 2 | Parpaing-Ville | vomi dans les couloirs → agents d'entretien |
-| 3 | Grand-Parpaing (métropole) | odeur de pieds → masques à gaz, sinon malaises à la PTS |
-| 4 | Parpaing-la-Défense (mégapole) | avocats et délai légal de 24 h |
-| 5 | Parpaing-Nord (banlieue) | manifestations par vagues |
-| 6 | Parpaing-Plage | touristes : trois fois plus de public |
-| 7 | Parpaing-les-Neiges | tempêtes qui bloquent les patrouilles → motoneiges |
-| 8 | Roissy-Parpaing (aéroport) | passagers étrangers → interprètes, et colis suspects |
-| 9 | Festival de Parpaing | GAV de stars, paparazzis et scandales → chargés de com' |
-| 10 | Place Beauvau-Parpaing (ministère) | réunionite et inspection de l'IGPN |
+| 1 | Saint-Glinglin-les-Choux (campagne) | aucun, on apprend le métier |
+| 2 | Bourg-en-Paperasse | vomi dans les couloirs → agents d'entretien |
+| 3 | Grand-Bouchon (métropole) | odeur de pieds → masques à gaz, sinon malaises à la PTS |
+| 4 | La Dalle-sur-Bourse (mégapole) | avocats et délai légal de 24 h |
+| 5 | Pontcassé-sous-Bois (banlieue) | manifestations par vagues |
+| 6 | Sainte-Crème-sur-Mer | touristes : trois fois plus de public |
+| 7 | Les Deux-Moufles | tempêtes qui bloquent les patrouilles → motoneiges |
+| 8 | Roissy-en-Retard (aéroport) | passagers étrangers → interprètes, et colis suspects |
+| 9 | Festival de Cannettes | GAV de stars, paparazzis et scandales → chargés de com' |
+| 10 | Place Beauvau (ministère) | réunionite et inspection de l'IGPN |
 
 Au-delà, des secteurs sans fin tirent 3 ou 4 problèmes au hasard.
 

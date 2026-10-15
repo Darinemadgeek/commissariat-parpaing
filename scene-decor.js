@@ -278,7 +278,7 @@
       box(g, w * 0.6, 3, w * 0.5, '#d8dce4', 0, hh, 0);
     }
     panel(p, 'TAMPON+', 10, 3.4, '#ff3a8a', '#ffffff', -50, 24, -39.4, 0, 0.9);
-    panel(p, 'PARPAING BANK', 10, 3.4, '#1a1a2a', '#3fe0ff', 50, 28, -40.9, 0, 0.9);
+    panel(p, 'BANQUE DU TAMPON', 10, 3.4, '#1a1a2a', '#3fe0ff', 50, 28, -40.9, 0, 0.9);
     for (const x of [-22, 22]) { box(p, 16, 0.6, 7, '#d0ccc4', x, 0, 36); add(p, new THREE.PlaneGeometry(15, 6), mat('#5aa8d8', { roughness: 0.1, metalness: 0.2 }), x, 0.62, 36, false).rotation.x = -Math.PI / 2; }
     for (let i = 0; i < 9; i++) { const x = -48 + i * 12; if (Math.abs(x) < 8) continue; cyl(p, 1.3, 1.3, 0.9, '#bfb8ac', x, 0, 27.5, 12); tree(p, x, 27.5, 0.65, '#5a9a4a').position.y = 0.8; }
     const sc = grp(p, 0, 0, 38); for (let i = 0; i < 5; i++) cyl(sc, 0.5, 0.5, 6, ['#ff4a5a', '#3a8aff', '#ffd23f', '#ff4a5a', '#3a8aff'][i], -1.2 + i * 0.6, 0, 0, 10).rotation.z = -0.4 + i * 0.2;
@@ -416,7 +416,7 @@
     for (let i = 0; i < 40; i++) flat(p, 3, 0.35, '#ffd23f', -98 + i * 5, -52, 0.05);
     const term = house(p, 37, 9, 14, facade('term', '#e8ecf2', '#7ab8d8', { curtain: true }), '#e8ecf2', -54, -8, Math.PI / 2, { bay: 3, metal: 0.25 });
     const rf = add(p, new THREE.CylinderGeometry(8.5, 8.5, 39, 24, 1, false, 0, Math.PI), '#f2f4f8', -54, 9, -8); rf.rotation.set(0, Math.PI / 2, Math.PI / 2, 'YXZ'); rf.scale.set(1, 1, 0.45);
-    panel(p, 'ROISSY-PARPAING', 16, 2, '#ffffff', '#1f3a8a', -46.8, 6.5, -8, Math.PI / 2);
+    panel(p, 'ROISSY-EN-RETARD', 16, 2, '#ffffff', '#1f3a8a', -46.8, 6.5, -8, Math.PI / 2);
     const tw = grp(p, 50, 0, -22); cyl(tw, 2, 3, 26, '#e8ecf2', 0, 0, 0, 14); cyl(tw, 4.4, 3.6, 3.4, mat('#4a8ab8', { metalness: 0.4, roughness: 0.2 }), 0, 26, 0, 14); cyl(tw, 4.8, 4.8, 0.6, '#d8dce4', 0, 29.4, 0, 14);
     const rad = box(tw, 4, 0.3, 0.6, '#8a8f98', 0, 31, 0); W.anim((dt, t) => { rad.rotation.y = t * 2; });
     const plane = c => { const g = grp(p);
@@ -465,7 +465,7 @@
     box(st, 30, 2, 14, '#2a2a34', 0, 0, 0);
     for (const x of [-15, 15]) for (const z of [-7, 7]) box(st, 0.6, 14, 0.6, '#8a8f98', x, 2, z);
     box(st, 31, 0.8, 15, '#8a8f98', 0, 16, 0);
-    panel(st, 'PARPAING FEST', 24, 7, '#1a0a2a', '#ff3a9a', 0, 9.5, -6.5, 0, 1);
+    panel(st, 'CANNETTES FEST', 24, 7, '#1a0a2a', '#ff3a9a', 0, 9.5, -6.5, 0, 1);
     for (const x of [-19, 19]) { box(st, 4, 7, 3, '#1a1a1a', x, 0, 4); for (let k = 0; k < 2; k++) cyl(st, 1, 1, 0.1, '#3a3a3a', x, 1.8 + k * 3, 5.55, 14).rotation.x = Math.PI / 2; }
     const beams = [];
     ['#ff3a9a', '#3fe0ff', '#ffd23f', '#7ee04a', '#a05aff'].forEach((c, i) => {

@@ -108,25 +108,25 @@ window.PD = (function () {
     reunion: { name: 'Réunionite', desc: "Toutes les minutes, une réunion bloque une partie des enquêteurs." },
   };
   const SITES = [
-    { name: 'Saint-Parpaing-les-Choux', biome: 'campagne', kind: 'Campagne', problems: [], style: 'stone', star3: { id: 'sat', min: 0.9, label: 'Usagers bien reçus ≥ 90 %' },
+    { name: 'Saint-Glinglin-les-Choux', biome: 'campagne', kind: 'Campagne', problems: [], style: 'stone', star3: { id: 'sat', min: 0.9, label: 'Usagers bien reçus ≥ 90 %' },
       pitch: 'Un village, trois vaches et un tracteur. Les plaintes parlent de poules volées et de clôtures arrachées.' },
-    { name: 'Parpaing-Ville', biome: 'ville', kind: 'Ville', problems: ['vomi'], style: 'classic', star3: { id: 'clean', label: 'Propreté des couloirs ≥ 90 %' },
+    { name: 'Bourg-en-Paperasse', biome: 'ville', kind: 'Ville', problems: ['vomi'], style: 'classic', star3: { id: 'clean', label: 'Propreté des couloirs ≥ 90 %' },
       pitch: 'Les bars ferment à 2 h, les GAV arrivent à 2 h 05. Et certaines vomissent dans les couloirs.' },
-    { name: 'Grand-Parpaing', biome: 'metropole', kind: 'Métropole', problems: ['vomi', 'pieds'], style: 'modern', star3: { id: 'faint', label: 'Aucun malaise à la PTS' },
+    { name: 'Grand-Bouchon', biome: 'metropole', kind: 'Métropole', problems: ['vomi', 'pieds'], style: 'modern', star3: { id: 'faint', label: 'Aucun malaise à la PTS' },
       pitch: 'Des gardés à vue qui sentent si fort des pieds que la PTS tombe dans les pommes. Masques à gaz obligatoires.' },
-    { name: 'Parpaing-la-Défense', biome: 'megapole', kind: 'Mégapole', problems: ['vomi', 'pieds', 'delai'], style: 'glass', star3: { id: 'levee', label: 'Aucune GAV levée' },
+    { name: 'La Dalle-sur-Bourse', biome: 'megapole', kind: 'Mégapole', problems: ['vomi', 'pieds', 'delai'], style: 'glass', star3: { id: 'levee', label: 'Aucune GAV levée' },
       pitch: "Des avocats d'affaires partout. Passé le délai légal, la GAV est levée et le dossier part à la poubelle." },
-    { name: 'Parpaing-Nord', biome: 'cite', kind: 'Banlieue', problems: ['pieds', 'delai', 'manif'], style: 'bunker', star3: { id: 'lost', label: 'Relâchés faute de place ≤ 10 %' },
+    { name: 'Pontcassé-sous-Bois', biome: 'cite', kind: 'Banlieue', problems: ['pieds', 'delai', 'manif'], style: 'bunker', star3: { id: 'lost', label: 'Relâchés faute de place ≤ 10 %' },
       pitch: 'Une grosse manif chaque semaine. Les interpellations arrivent par cars entiers.' },
-    { name: 'Parpaing-Plage', biome: 'plage', kind: 'Bord de mer', problems: ['touristes', 'pieds', 'vomi'], style: 'beach', star3: { id: 'sat', min: 0.85, label: 'Usagers bien reçus ≥ 85 %' },
+    { name: 'Sainte-Crème-sur-Mer', biome: 'plage', kind: 'Bord de mer', problems: ['touristes', 'pieds', 'vomi'], style: 'beach', star3: { id: 'sat', min: 0.85, label: 'Usagers bien reçus ≥ 85 %' },
       pitch: 'Tongs, sangria et coups de soleil. Les touristes perdent tout, les mouettes volent le reste.' },
-    { name: 'Parpaing-les-Neiges', biome: 'neige', kind: 'Montagne', problems: ['neige', 'vomi', 'touristes'], style: 'chalet', star3: { id: 'clean', label: 'Propreté des couloirs ≥ 90 %' },
+    { name: 'Les Deux-Moufles', biome: 'neige', kind: 'Montagne', problems: ['neige', 'vomi', 'touristes'], style: 'chalet', star3: { id: 'clean', label: 'Propreté des couloirs ≥ 90 %' },
       pitch: "Tempêtes de neige, skieurs perdus et après-ski qui finit mal. Prévoyez des motoneiges et des serpillières." },
-    { name: 'Roissy-Parpaing', biome: 'aeroport', kind: 'Aéroport', problems: ['interpretes', 'delai', 'touristes'], style: 'airport', star3: { id: 'levee', label: 'Aucune GAV levée' },
+    { name: 'Roissy-en-Retard', biome: 'aeroport', kind: 'Aéroport', problems: ['interpretes', 'delai', 'touristes'], style: 'airport', star3: { id: 'levee', label: 'Aucune GAV levée' },
       pitch: 'Des passagers du monde entier, des valises oubliées partout et des correspondances à ne pas rater.' },
-    { name: 'Festival de Parpaing', biome: 'festival', kind: 'Festival', problems: ['vip', 'manif', 'vomi'], style: 'fest', star3: { id: 'scandal', label: 'Aucun scandale de star' },
+    { name: 'Festival de Cannettes', biome: 'festival', kind: 'Festival', problems: ['vip', 'manif', 'vomi'], style: 'fest', star3: { id: 'scandal', label: 'Aucun scandale de star' },
       pitch: "Paillettes, tapis rouge et stars en garde à vue. Les paparazzis campent devant l'entrée." },
-    { name: 'Place Beauvau-Parpaing', biome: 'ministere', kind: 'Ministère', problems: ['reunion', 'delai', 'vip'], style: 'palace', star3: { id: 'igpn', label: "Inspection de l'IGPN réussie" },
+    { name: 'Place Beauvau', biome: 'ministere', kind: 'Ministère', problems: ['reunion', 'delai', 'vip'], style: 'palace', star3: { id: 'igpn', label: "Inspection de l'IGPN réussie" },
       pitch: "Le sommet de la carrière : des réunions toute la journée et l'IGPN dans le bureau d'à côté." },
   ];
   // Au-delà : des secteurs sans fin, 3 ou 4 problèmes tirés au sort (toujours les mêmes pour un secteur donné)
@@ -152,7 +152,7 @@ window.PD = (function () {
     // un critère qui ne peut pas rater ne compte pas : les levées viennent du délai légal, les relâchés des manifs
     const NEEDS = { levee: 'delai', lost: 'manif' };
     const star3 = STAR3_OF[probs.find(p => !NEEDS[STAR3_OF[p].id] || probs.includes(NEEDS[STAR3_OF[p].id]))];
-    return { name: `Secteur Parpaing ${k}`, biome, kind: 'Secteur spécial', problems: probs, style: STYLE_OF[biome], hard: k, star3,
+    return { name: `Secteur spécial n° ${k}`, biome, kind: 'Secteur spécial', problems: probs, style: STYLE_OF[biome], hard: k, star3,
       pitch: 'Plusieurs problèmes tirés au sort, en plus gros. Le préfet compte sur vous.' };
   }
 
@@ -316,5 +316,7 @@ window.PD = (function () {
   const eur = (n, dec) => fmt(n, dec) + ' €';
   const pick = a => a[Math.floor(Math.random() * a.length)];
 
-  return { T, ICONS, UNITS, UPGRADES, SELL, BUILDINGS, tier, RADIO, RADIO_BY, GOLDEN, PRIME_TALK, PROBLEMS, SITES, site, fmt, eur, pick };
+  // « commissariat de Grand-Bouchon », « des Deux-Moufles », « de la Place Beauvau », « du Festival de Cannettes »
+  const ofPlace = n => (/^Les /.test(n) ? 'des ' + n.slice(4) : /^Le /.test(n) ? 'du ' + n.slice(3) : /^La /.test(n) ? 'de la ' + n.slice(3) : /^(Festival|Secteur) /.test(n) ? 'du ' + n.charAt(0).toLowerCase() + n.slice(1) : /^Place /.test(n) ? 'de la ' + n.charAt(0).toLowerCase() + n.slice(1) : 'de ' + n);
+  return { ofPlace, T, ICONS, UNITS, UPGRADES, SELL, BUILDINGS, tier, RADIO, RADIO_BY, GOLDEN, PRIME_TALK, PROBLEMS, SITES, site, fmt, eur, pick };
 })();

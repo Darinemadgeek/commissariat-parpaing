@@ -34,7 +34,7 @@
     const star = on => `<span style="color:${on ? '#c48a00' : '#b9b3a0'}">★</span>`;
     $('pvSlot').innerHTML = `<div class="pv" role="dialog" aria-label="Rapport de fin de semaine">
       <h2>PROCÈS-VERBAL · SEMAINE ${p.no}</h2>
-      <div class="sub">Commissariat de ${GM.here().name}</div>
+      <div class="sub">Commissariat ${PD.ofPlace(GM.here().name)}</div>
       <div class="stamp-row"><span class="stamp ${ok ? 'ok' : ''}">${ok ? 'PRIME ACCORDÉE' : 'PRIME REFUSÉE'}</span></div>
       <dl>
         <dt>${star(p.st[0])} Dossiers traités</dt><dd>${fmt(p.dossiers)} / ${fmt(p.objective)}</dd>
@@ -314,7 +314,7 @@
       svg += `<g class="node" tabindex="0" data-i="${idx}" transform="translate(${x} ${y})">
         <circle r="30" fill="${done || here ? '#ffffff' : '#f4efe1'}" stroke="${ring}" stroke-width="${sel === idx ? 7 : 4}" class="ring"/>
         <g opacity="${done || here || next ? 1 : 0.45}" transform="scale(.9)">${ICON[s.biome]}</g>
-        <text y="46" text-anchor="${anchor}" font-family="Rubik, sans-serif" font-weight="800" font-size="12.5" fill="#2a2833">${idx > cur + 1 ? 'Secteurs suivants' : idx < last ? (idx + 1) + '. ' + s.name : s.name.replace('Secteur Parpaing', 'Secteur')}</text>
+        <text y="46" text-anchor="${anchor}" font-family="Rubik, sans-serif" font-weight="800" font-size="12.5" fill="#2a2833">${idx > cur + 1 ? 'Secteurs suivants' : idx < last ? (idx + 1) + '. ' + s.name : s.name.replace('Secteur spécial ', 'Secteur ')}</text>
         <text y="61" text-anchor="${anchor}" font-family="Rubik, sans-serif" font-size="12" fill="#5a5560">${here ? (idx > last ? 'Ici · ★ ' : 'Vous êtes ici · ★ ') + Math.min(G.cstars, T.STARS_TO_MOVE) + '/' + T.STARS_TO_MOVE : done ? 'Terminé ★ ' + (G.siteStars[idx] || T.STARS_TO_MOVE) : next ? 'Prochaine mutation' : 'Verrouillé'}</text>
       </g>`;
     }

@@ -197,7 +197,7 @@
     box(pg, 1.1, 5.2, 1.1, c.wall, -5.6, 0, 0); box(pg, 1.1, 5.2, 1.1, c.wall, 5.6, 0, 0);
     box(pg, 12.4, 1.5, 1.3, c.trim, 0, 5.2, 0);
     sign(pg, 'POLICE', 7, 1.1, c.trim, '#ffffff', 0, 5.95, 0.66);
-    sign(pg, (P.gate ? 'GENDARMERIE DE ' : 'COMMISSARIAT DE ') + siteName.toUpperCase(), 9, 0.42, '#ffffff', c.trim, 0, 4.85, 0.67);
+    sign(pg, ((P.gate ? 'GENDARMERIE ' : 'COMMISSARIAT ') + PD.ofPlace(siteName)).toUpperCase(), 9, 0.42, '#ffffff', c.trim, 0, 4.85, 0.67);
     box(pg, 0.5, 0.5, 0.5, lampB, -5.6, 5.2, 0.7); box(pg, 0.5, 0.5, 0.5, lampB, 5.6, 5.2, 0.7);
     if (!P.gate) { const canopy = new THREE.Mesh(new THREE.BoxGeometry(11, 0.12, 2.4), glass); canopy.position.set(0, 3.6, -0.6); pg.add(canopy); }
     const front = Math.min(15.4, portal[1] + 3.4);

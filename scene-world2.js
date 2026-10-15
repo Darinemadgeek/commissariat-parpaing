@@ -141,7 +141,7 @@
     const term = grp(p, -55, -68);
     W.building(term, 110, 12, 16, 'verre', 0, 0, true);
     box(term, 112, 1, 18, '#e8edf3', 0, 12, 0);
-    sign(term, 'ROISSY-PARPAING', 30, 3, '#1b2a5c', '#ffffff', 0, 9, 8.05);
+    sign(term, 'ROISSY-EN-RETARD', 30, 3, '#1b2a5c', '#ffffff', 0, 9, 8.05);
     for (let i = 0; i < 4; i++) box(term, 3, 3, 14, '#c9ccd1', -40 + i * 26, 4, -15);
     // tour de contrôle
     const tw = grp(p, 70, -72);
