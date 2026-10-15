@@ -199,6 +199,13 @@
       list.appendChild(inst);
       const ib = inst.querySelector('#installBtn');
       if (ib) ib.onclick = () => { installEvt.prompt(); installEvt.userChoice.finally(() => { installEvt = null; render(); }); };
+      // qualité graphique : allège le jeu sur les vieux téléphones
+      const qb = document.createElement('div'); qb.className = 'install quality';
+      const Q = [['auto', 'Auto'], ['eco', 'Économie'], ['normal', 'Normale'], ['beau', 'Belle']];
+      qb.innerHTML = '<b>Qualité graphique</b><span>« Économie » allège les décors, coupe les ombres et baisse la résolution : à choisir si le jeu rame sur un vieux téléphone.</span><div class="qbtns" role="group" aria-label="Qualité graphique">'
+        + Q.map(([k, l]) => `<button type="button" data-q="${k}" aria-pressed="${S.quality() === k}">${l}</button>`).join('') + '</div>';
+      qb.querySelectorAll('button').forEach(b => { b.onclick = () => { S.setQuality(b.dataset.q); S.setSite(GM.here()); render(); toast('Qualité graphique : ' + b.textContent); }; });
+      list.appendChild(qb);
       addEl('div', 'dossier', () => {
         const p = GM.primeCalc(G.week), h = GM.here();
         return `<h3>Dossier du commissaire Parpaing</h3><dl>

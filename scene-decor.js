@@ -5,7 +5,8 @@
 // (route avant z 20, arrière z -32, côtés x ±32, 8 m de large). Chaque lieu remplace son décor dans S.world.EXTRA.
 (function () {
   const { THREE, mat, setSky } = S;
-  const W = S.world, E = W.EXTRA, LOW = S.low;
+  const W = S.world, E = W.EXTRA;
+  let LOW = S.low; // relu à chaque construction (réglage de qualité)
   const rr = (a, b) => a + W.rand() * (b - a), pick = a => a[Math.floor(W.rand() * a.length)];
 
   // ---------- outils ----------
@@ -146,6 +147,7 @@
 
   // ---------- 1. campagne ----------
   E.campagne = p => {
+    LOW = S.low;
     sky({ sky: '#a8dcff', fogNear: 120, fogFar: 300, hemiGround: '#5d7d3c', sunI: 0.9 });
     ground(p, '#8fd16a'); ringRoads(p, '#c4a070', null, 320);
     // pré aux vaches (devant à gauche)
@@ -199,6 +201,7 @@
 
   // ---------- 2. ville ----------
   E.ville = p => {
+    LOW = S.low;
     sky({ sky: '#f8dcb4', fogNear: 100, fogFar: 260, hemiSky: '#fff0dc', hemiGround: '#a8987a', hemi: 0.8, sun: '#ffe2b8', sunI: 0.95 });
     ground(p, '#cdbf9e'); flat(p, 240, 240, cobbles([60, 60], '#d8ccb2'), 0, 0, 0.005);
     ringRoads(p); sidewalk(p, '#e8dcc6');
@@ -241,6 +244,7 @@
 
   // ---------- 3. métropole ----------
   E.metropole = p => {
+    LOW = S.low;
     sky({ sky: '#bcd4ec', fogNear: 100, fogFar: 270, hemiSky: '#dce8f8', hemiGround: '#8a8f98', sun: '#f4f8ff', sunI: 0.85 });
     ground(p, '#cfd2d6'); ringRoads(p); sidewalk(p);
     const fac = facade('hauss', '#efe2c4', '#4a5568', { balcony: '#2a2f3a', tall: 0.58, frame: '#f6eedc' });
@@ -266,6 +270,7 @@
 
   // ---------- 4. quartier d'affaires ----------
   E.megapole = p => {
+    LOW = S.low;
     sky({ sky: '#f4a68a', fogNear: 100, fogFar: 300, hemiSky: '#ffd8c0', hemiGround: '#7a6a8a', hemi: 0.8, sun: '#ffc090', sunI: 1 });
     ground(p, '#c8c2ba'); flat(p, 260, 260, dalle([60, 60]), 0, 0, 0.005);
     ringRoads(p, '#5a5a66', '#e8e0d8', 200);
@@ -289,6 +294,7 @@
 
   // ---------- 5. banlieue ----------
   E.cite = p => {
+    LOW = S.low;
     sky({ sky: '#c4cad2', fogNear: 80, fogFar: 230, hemiSky: '#dfe6ee', hemiGround: '#7a7a72', hemi: 0.95, sun: '#eef2f6', sunI: 0.65 });
     ground(p, '#a8b09a'); ringRoads(p); sidewalk(p, '#c0bcb4');
     const pans = [['#f2c84a', '#e85d4a', '#4ab8a8'], ['#8ac85a', '#f2a03a', '#5a8ae8'], ['#e86a8a', '#f2d24a', '#4ab8e8']];
@@ -329,6 +335,7 @@
 
   // ---------- 6. plage ----------
   E.plage = p => {
+    LOW = S.low;
     sky({ sky: '#8fd8ff', fogNear: 130, fogFar: 330, hemiSky: '#e8f8ff', hemiGround: '#e8d0a0', sun: '#fff4dc', sunI: 1.05 });
     ground(p, '#e6cc8a'); ringRoads(p, '#8a8a8a', '#ffffff', 200);
     const seaG = new THREE.PlaneGeometry(320, 110, LOW ? 30 : 60, LOW ? 10 : 20); seaG.rotateX(-Math.PI / 2);
@@ -368,6 +375,7 @@
 
   // ---------- 7. montagne ----------
   E.neige = p => {
+    LOW = S.low;
     sky({ sky: '#f2c4d4', fogNear: 100, fogFar: 300, hemiSky: '#ffe0f0', hemiGround: '#a8b8d8', hemi: 0.95, sun: '#ffd0b8', sunI: 0.9 });
     ground(p, '#f6f8ff'); ringRoads(p, '#c8ccd8', null, 260);
     const mtn = add(p, new THREE.ConeGeometry(80, 85, 9, 3), mat('#d8deec', { flatShading: true }), 10, 42.5, -170, false); mtn.scale.set(1.4, 1, 0.8);
@@ -408,6 +416,7 @@
 
   // ---------- 8. aéroport ----------
   E.aeroport = p => {
+    LOW = S.low;
     sky({ sky: '#9fd0ff', fogNear: 140, fogFar: 340, hemiGround: '#7f9a6c', sun: '#ffffff', sunI: 0.95 });
     ground(p, '#9ac87a'); ringRoads(p, '#4a4f5a', '#ffffff', 220); sidewalk(p, '#d8dce4');
     flat(p, 240, 56, tarmac([44, 10]), 0, -66, 0.02);
@@ -445,6 +454,7 @@
 
   // ---------- 9. festival ----------
   E.festival = p => {
+    LOW = S.low;
     sky({ sky: '#2a1b4a', fogNear: 80, fogFar: 240, hemiSky: '#6a5aa8', hemiGround: '#1a2a1a', hemi: 0.6, sun: '#8a7aff', sunI: 0.35 });
     ground(p, '#3f6b3a'); ringRoads(p, '#3a3d48', '#e8e0c0', 220); flat(p, 200, 2.2, '#5a5868', 0, 25.4, 0.035);
     for (let i = 0; i < 9; i++) lamp(p, -64 + i * 16, 24.6, true);
@@ -494,6 +504,7 @@
 
   // ---------- 10. ministère ----------
   E.ministere = p => {
+    LOW = S.low;
     sky({ sky: '#cfe3f5', fogNear: 110, fogFar: 290, hemiSky: '#eef4fa', hemiGround: '#8a9a7a', sun: '#fff8ec', sunI: 0.9 });
     ground(p, '#9ab87a'); ringRoads(p); sidewalk(p, '#ddd6c8');
     flat(p, 150, 34, cobbles([36, 8], '#d9d2c3'), 0, -52, 0.025);

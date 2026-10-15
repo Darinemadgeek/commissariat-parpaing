@@ -110,36 +110,37 @@
     const room = k => P.rooms.find(o => o.k === k);
     const isDoor = (axis, line, a) => doors.some(d => d.axis === axis && Math.abs((axis === 'x' ? d.z : d.x) - line) < 0.3 && Math.abs((axis === 'x' ? d.x : d.z) - a) < d.w / 2);
 
+    const sh = grp(b, 0, 0); // coque fixe : fusionnée en quelques maillages à la fin
     // ---------- terrain, clôture, cour des véhicules ----------
     const portal = P.portal || [room('hall').en.x, room('hall').en.z + 0.6];
     const gx = Math.max(-16, Math.min(16, portal[0]));
-    box(b, 56, 0.1, 44, c.lot, 0, 0, -6);
-    flat(b, 22, 14, '#5a5f6e', 15, 0.11, -20.5);
-    for (let i = 0; i < 8; i++) flat(b, 0.12, 4, '#ffffff', 5.5 + i * 2.6, 0.12, -25);
+    box(sh, 56, 0.1, 44, c.lot, 0, 0, -6);
+    flat(sh, 22, 14, '#5a5f6e', 15, 0.11, -20.5);
+    for (let i = 0; i < 8; i++) flat(sh, 0.12, 4, '#ffffff', 5.5 + i * 2.6, 0.12, -25);
     const fence = (x0, z0, x1, z1, gaps) => {
       const horiz = z0 === z1, L = horiz ? x1 - x0 : z1 - z0;
-      (horiz ? wallX : wallZ)(b, horiz ? z0 : x0, horiz ? x0 : z0, horiz ? x1 : z1, 0.5, 0.35, c.trim, gaps, 0.05);
+      (horiz ? wallX : wallZ)(sh, horiz ? z0 : x0, horiz ? x0 : z0, horiz ? x1 : z1, 0.5, 0.35, c.trim, gaps, 0.05);
       for (let k = 0; k <= L; k += 2.5) {
         const x = horiz ? x0 + k : x0, z = horiz ? z0 : z0 + k;
         if ((gaps || []).some(([g0, g1]) => (horiz ? x : z) > g0 - 0.2 && (horiz ? x : z) < g1 + 0.2)) continue;
-        cyl(b, 0.05, 0.05, 1.3, 5, '#30343c', x, 0.55, z);
+        cyl(sh, 0.05, 0.05, 1.3, 5, '#30343c', x, 0.55, z);
       }
     };
     fence(-28, 16, 28, 16, [[gx - 10, gx + 10]]); fence(-28, -28, 28, -28, [[9, 21]]); fence(-28, -28, -28, 16); fence(28, -28, 28, 16);
-    box(b, 10, 0.18, 0.18, '#e63946', 15, 1.0, -28.2); for (let i = 0; i < 4; i++) box(b, 1.2, 0.2, 0.2, '#ffffff', 11 + i * 2.6, 1.0, -28.2);
+    box(sh, 10, 0.18, 0.18, '#e63946', 15, 1.0, -28.2); for (let i = 0; i < 4; i++) box(sh, 1.2, 0.2, 0.2, '#ffffff', 11 + i * 2.6, 1.0, -28.2);
 
     // ---------- sols : dalles des pièces et couloirs, allées extérieures, décors ----------
     const FLOOR = { hall: '#f1e9da', pla: '#e8d3b0', pts: '#e3ecf8', inv: '#b9c6dd', gav: '#c3c7cd', boss: '#a8323e' };
-    for (const r of indoor) box(b, r[2] - r[0], Y, r[3] - r[1], '#9aa0aa', (r[0] + r[2]) / 2, 0, (r[1] + r[3]) / 2);
-    for (const o of P.rooms) flat(b, o.r[2] - o.r[0], o.r[3] - o.r[1], FLOOR[o.k], o.f.cx, Y + 0.005, o.f.cz);
-    for (const r of P.corr || []) flat(b, r[2] - r[0], r[3] - r[1], P.corrColor || '#d8dbe0', (r[0] + r[2]) / 2, Y + 0.005, (r[1] + r[3]) / 2);
+    for (const r of indoor) box(sh, r[2] - r[0], Y, r[3] - r[1], '#9aa0aa', (r[0] + r[2]) / 2, 0, (r[1] + r[3]) / 2);
+    for (const o of P.rooms) flat(sh, o.r[2] - o.r[0], o.r[3] - o.r[1], FLOOR[o.k], o.f.cx, Y + 0.005, o.f.cz);
+    for (const r of P.corr || []) flat(sh, r[2] - r[0], r[3] - r[1], P.corrColor || '#d8dbe0', (r[0] + r[2]) / 2, Y + 0.005, (r[1] + r[3]) / 2);
     const GROUND = { gravel: '#d9c79e', planks: '#c79a62', plaza: '#6e6888' };
     for (const r of P.out || []) {
       const w = r[2] - r[0], d = r[3] - r[1];
-      flat(b, w, d, GROUND[P.ground] || '#d8d2c4', (r[0] + r[2]) / 2, 0.12, (r[1] + r[3]) / 2);
-      if (P.ground === 'planks') { const along = w > d; for (let k = 1; k < (along ? w : d) / 0.9; k++) flat(b, along ? 0.06 : w, along ? d : 0.06, '#9a7244', along ? r[0] + k * 0.9 : (r[0] + r[2]) / 2, 0.125, along ? (r[1] + r[3]) / 2 : r[1] + k * 0.9); }
+      flat(sh, w, d, GROUND[P.ground] || '#d8d2c4', (r[0] + r[2]) / 2, 0.12, (r[1] + r[3]) / 2);
+      if (P.ground === 'planks') { const along = w > d; for (let k = 1; k < (along ? w : d) / 0.9; k++) flat(sh, along ? 0.06 : w, along ? d : 0.06, '#9a7244', along ? r[0] + k * 0.9 : (r[0] + r[2]) / 2, 0.125, along ? (r[1] + r[3]) / 2 : r[1] + k * 0.9); }
     }
-    for (const dc of P.deco || []) decor(b, dc, c);
+    for (const dc of P.deco || []) decor(sh, dc, c);
 
     // ---------- murs générés : extérieurs hauts avec fenêtres, cloisons basses, portes ----------
     const EH = 2.1, IH = 1.4, T = P.thick || 0.3;
@@ -175,7 +176,7 @@
     for (const w of runs) {
       if (w.t === 'door') continue;
       const L = w.a1 - w.a0, mid = (w.a0 + w.a1) / 2;
-      const put = (h, th, col, y) => (w.ax === 'x' ? box(b, L, h, th, col, mid, y, w.line) : box(b, th, h, L, col, w.line, y, mid));
+      const put = (h, th, col, y) => (w.ax === 'x' ? box(sh, L, h, th, col, mid, y, w.line) : box(sh, th, h, L, col, w.line, y, mid));
       if (w.t === 'in') { put(IH, 0.16, w.col, Y); continue; }
       if (w.t === 'glass') { const g = put(1.8, 0.08, glass, Y); g.castShadow = false; continue; }
       put(EH, T, w.col, Y); put(0.22, T + 0.12, c.trim, Y + EH);
@@ -185,15 +186,15 @@
       for (let a = w.a0 + 1.8; a < w.a1 - 1.6; a += P.slits ? 4 : 4.5) {
         const px = w.ax === 'x' ? a : w.line + w.n[0] * off, pz = w.ax === 'x' ? w.line + w.n[1] * off : a;
         if (doors.some(d => Math.hypot(d.x - px, d.z - pz) < d.w / 2 + 1.4)) continue;
-        w.ax === 'x' ? box(b, pw, ph, 0.06, glass, px, py, pz) : box(b, 0.06, ph, pw, glass, px, py, pz);
+        w.ax === 'x' ? box(sh, pw, ph, 0.06, glass, px, py, pz) : box(sh, 0.06, ph, pw, glass, px, py, pz);
       }
     }
     // poteaux aux angles extérieurs et encadrements des portes : un contour plus « maquette »
-    for (const w of runs) if (w.t === 'ext') for (const a of [w.a0, w.a1]) { const x = w.ax === 'x' ? a : w.line, z = w.ax === 'x' ? w.line : a; box(b, T + 0.35, EH + 0.35, T + 0.35, c.trim, x, 0, z); }
-    if (P.containers) for (const o of P.rooms) { const [x0, z0, x1, z1] = o.r; for (let x = x0 + 1.2; x < x1 - 0.6; x += 1.2) { box(b, 0.08, EH, 0.12, darker(wallC(o.k)), x, Y, z1 + 0.17); box(b, 0.08, EH, 0.12, darker(wallC(o.k)), x, Y, z0 - 0.17); } }
+    for (const w of runs) if (w.t === 'ext') for (const a of [w.a0, w.a1]) { const x = w.ax === 'x' ? a : w.line, z = w.ax === 'x' ? w.line : a; box(sh, T + 0.35, EH + 0.35, T + 0.35, c.trim, x, 0, z); }
+    if (P.containers) for (const o of P.rooms) { const [x0, z0, x1, z1] = o.r; for (let x = x0 + 1.2; x < x1 - 0.6; x += 1.2) { box(sh, 0.08, EH, 0.12, darker(wallC(o.k)), x, Y, z1 + 0.17); box(sh, 0.08, EH, 0.12, darker(wallC(o.k)), x, Y, z0 - 0.17); } }
 
     // ---------- entrée : portail monumental (ou porche de la cour) ----------
-    const pg = grp(b, portal[0], portal[1]);
+    const pg = grp(sh, portal[0], portal[1]);
     box(pg, 1.1, 5.2, 1.1, c.wall, -5.6, 0, 0); box(pg, 1.1, 5.2, 1.1, c.wall, 5.6, 0, 0);
     box(pg, 12.4, 1.5, 1.3, c.trim, 0, 5.2, 0);
     sign(pg, 'POLICE', 7, 1.1, c.trim, '#ffffff', 0, 5.95, 0.66);
@@ -201,8 +202,8 @@
     box(pg, 0.5, 0.5, 0.5, lampB, -5.6, 5.2, 0.7); box(pg, 0.5, 0.5, 0.5, lampB, 5.6, 5.2, 0.7);
     if (!P.gate) { const canopy = new THREE.Mesh(new THREE.BoxGeometry(11, 0.12, 2.4), glass); canopy.position.set(0, 3.6, -0.6); pg.add(canopy); }
     const front = Math.min(15.4, portal[1] + 3.4);
-    flat(b, 20, Math.max(1, 16 - portal[1]), '#e9e4d8', gx, 0.11, (portal[1] + 16) / 2);
-    [-9.5, -8.2].forEach((dx, i) => { const x = portal[0] + dx; cyl(b, 0.06, 0.07, 6.5, 6, '#dfe3ea', x, 0.1, front); ['#2346a8', '#ffffff', '#e63946'].forEach((col, k) => box(b, 0.5, 1.0, 0.05, col, x + 0.3 + k * 0.5, 5.3 - i * 0.2, front)); });
+    flat(sh, 20, Math.max(1, 16 - portal[1]), '#e9e4d8', gx, 0.11, (portal[1] + 16) / 2);
+    [-9.5, -8.2].forEach((dx, i) => { const x = portal[0] + dx; cyl(sh, 0.06, 0.07, 6.5, 6, '#dfe3ea', x, 0.1, front); ['#2346a8', '#ffffff', '#e63946'].forEach((col, k) => box(sh, 0.5, 1.0, 0.05, col, x + 0.3 + k * 0.5, 5.3 - i * 0.2, front)); });
 
     // ---------- contenu de chaque pièce, dans son repère ----------
     const fill = (w, d, sx, sz, max, front = 1.4) => { // grille la plus remplie qui tient dans la pièce
@@ -426,6 +427,9 @@
     for (let i = 0; i < 8; i++) { const car = patrolCar(); car.userData = { d: i * 30, sp: 9 + Math.random() * 2 }; car.visible = false; b.add(car); R.cars.push(car); }
     for (let i = 0; i < 8; i++) { const car = patrolCar(); car.position.set(6.8 + i * 2.6, 0.1, -25); car.rotation.y = -Math.PI / 2; car.visible = false; b.add(car); R.parked.push(car); }
 
+    // moins d'appels de dessin : la coque et chaque cellule deviennent quelques maillages
+    S.world.merge(sh, { noAnim: true, transparent: true });
+    for (const cl of R.cells) S.world.merge(cl, { noAnim: true });
     S.B = R;
     R.style = c;
     return R;

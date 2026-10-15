@@ -245,7 +245,49 @@
     env = new THREE.Group(); scene.add(env); traffic = []; spinners = []; anims = [];
     seed = { campagne: 11, ville: 22, metropole: 33, megapole: 44, cite: 55, plage: 66, neige: 77, aeroport: 88, festival: 99, ministere: 111 }[biome] || 7;
     if (EXTRA[biome]) EXTRA[biome](env); else if (biome === 'campagne') campagne(env); else city(env, CITY[biome] ? biome : 'ville');
+    mergeStatic(env);
   }
+
+  // Regroupe tout ce qui ne bouge pas (même matériau, même ombre) en un seul maillage : beaucoup
+  // moins d'appels de dessin. Ce qui bouge est repéré en faisant tourner les animations une fois.
+  function mergeStatic(root, o = {}) {
+    const meshes = [], snap = new Map();
+    root.updateMatrixWorld(true);
+    root.traverse(o => { if (o.isMesh) { meshes.push(o); snap.set(o, [o.matrixWorld.clone(), shown(o), o.geometry.attributes.position.version]); } });
+    if (!o.noAnim) for (const t of [3.7, 11.3]) { for (const a of anims) a(0.5, t); for (const s of spinners) s.rotation.z = t * 0.8; }
+    for (const c of traffic) c.userData.dyn = true;
+    root.updateMatrixWorld(true);
+    const groups = new Map();
+    for (const m of meshes) {
+      const [mw, vis, ver] = snap.get(m);
+      if (!vis || !shown(m) || !m.matrixWorld.equals(mw) || m.geometry.attributes.position.version !== ver) continue;
+      if (Array.isArray(m.material) || m.material.map || (m.material.transparent && !o.transparent) || m.isSkinnedMesh || !m.geometry.attributes.normal) continue;
+      let q = m, dyn = false; while (q && q !== root) { if (q.userData.dyn) dyn = true; q = q.parent; } if (dyn) continue;
+      const key = m.material.uuid + (m.castShadow ? 'o' : '-');
+      if (!groups.has(key)) groups.set(key, []);
+      groups.get(key).push(m);
+    }
+    const inv = new THREE.Matrix4().copy(root.matrixWorld).invert();
+    for (const list of groups.values()) {
+      if (list.length < 2) continue;
+      let nv = 0, ni = 0;
+      const parts = list.map(m => { const g = m.geometry.index ? m.geometry : m.geometry; const c = new THREE.BufferGeometry(); c.setAttribute('position', g.attributes.position); c.setAttribute('normal', g.attributes.normal); if (g.index) c.setIndex(g.index); const w = c.clone().applyMatrix4(new THREE.Matrix4().multiplyMatrices(inv, m.matrixWorld)); nv += w.attributes.position.count; ni += w.index ? w.index.count : w.attributes.position.count; return w; });
+      const pos = new Float32Array(nv * 3), nor = new Float32Array(nv * 3), idx = nv > 65535 ? new Uint32Array(ni) : new Uint16Array(ni);
+      let vo = 0, io = 0;
+      for (const g of parts) {
+        const p = g.attributes.position, n = g.attributes.normal;
+        pos.set(p.array, vo * 3); nor.set(n.array, vo * 3);
+        if (g.index) { const a = g.index.array; for (let i = 0; i < a.length; i++) idx[io + i] = a[i] + vo; io += a.length; } else { for (let i = 0; i < p.count; i++) idx[io + i] = vo + i; io += p.count; }
+        vo += p.count; g.dispose();
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('normal', new THREE.BufferAttribute(nor, 3)); geo.setIndex(new THREE.BufferAttribute(idx, 1));
+      geo.computeBoundingSphere();
+      const big = new THREE.Mesh(geo, list[0].material); big.castShadow = list[0].castShadow; big.receiveShadow = true; root.add(big);
+      for (const m of list) m.parent.remove(m);
+    }
+  }
+  const shown = o => { for (let q = o; q; q = q.parent) if (!q.visible) return false; return true; };
 
   onFrame((dt, t) => {
     for (const c of traffic) {
@@ -259,7 +301,7 @@
   });
 
   S.world = {
-    build, building, carMesh, tree, roads, addTraffic, city, EXTRA,
+    build, building, merge: mergeStatic, carMesh, tree, roads, addTraffic, city, EXTRA,
     rand: () => rand(), rr, pick, anim: f => anims.push(f), spin: o => spinners.push(o),
   };
 })();

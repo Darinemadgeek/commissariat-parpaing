@@ -172,5 +172,24 @@ window.S = (function () {
   }
   requestAnimationFrame(loop);
 
-  return { THREE, scene, camera, controls, renderer, low: LOW, mat, geo, mesh, box, cyl, ball, flat, sign, rnd, rr, addTag, project, pickables, setSky, onFrame: f => frames.push(f), stage };
+  const api = { THREE, scene, camera, controls, renderer, low: LOW, mat, geo, mesh, box, cyl, ball, flat, sign, rnd, rr, addTag, project, pickables, setSky, onFrame: f => frames.push(f), stage };
+  // Qualité graphique : « auto » suit l'appareil ; « eco » = moins de pixels, pas d'ombres, décors allégés
+  // (pour les vieux téléphones) ; « normal » ; « beau » = pleine résolution et ombres fines.
+  const QKEY = 'parpaing-qualite';
+  let quality = 'auto';
+  try { quality = localStorage.getItem(QKEY) || 'auto'; } catch (e) { /* stockage indisponible : on reste en auto */ }
+  function applyQuality() {
+    const q = quality === 'auto' ? (LOW ? 'normal' : 'beau') : quality;
+    api.low = q !== 'beau' && (q === 'eco' || LOW);
+    api.eco = q === 'eco';
+    if (renderer) {
+      renderer.setPixelRatio(q === 'eco' ? 1 : Math.min(window.devicePixelRatio || 1, q === 'beau' ? 2 : 1.5));
+      sun.castShadow = q !== 'eco';
+      resize();
+    }
+  }
+  api.quality = () => quality;
+  api.setQuality = q => { quality = q; try { localStorage.setItem(QKEY, q); } catch (e) { /* tant pis : réglage pour cette visite */ } applyQuality(); };
+  applyQuality();
+  return api;
 })();
