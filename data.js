@@ -182,6 +182,29 @@ window.PD = (function () {
     { id: 'mailr', name: 'Réunion qui aurait pu être un mail', base: 450, g: 3.2, per: 0.25, prob: 'reunion', desc: '−25 % de durée des réunions par niveau' },
   ];
 
+  // Vide-grenier du commissariat : revendre un niveau d'équipement à moitié prix, avec sa petite annonce
+  const SELL = {
+    stamp: 'Vends tampon en titane, quasi neuf, ne tamponne que le mardi.',
+    coffee: 'Vends machine à café, détartrée en 2009. Les enquêteurs pleurent déjà.',
+    gyro: 'Vends gyrophare turbo, a déjà fait danser tout un quartier.',
+    bio: 'Vends borne biométrique, quelques empreintes de stagiaire encore dessus.',
+    tickets: 'Vends distributeur de tickets, bloqué sur le 999.',
+    hall: 'Vends chaises en plastique, un peu collantes, cause déménagement.',
+    lrp: 'Vends logiciel qui plante moins. Depuis la vente, il replante.',
+    form: 'Vends Cerfa simplifié, 47 pages seulement.',
+    com: 'Vends affiche « Venez porter plainte », légèrement trop efficace.',
+    beds: 'Vends bancs larges, idéal sieste, vue sur barreaux.',
+    crois: 'Vends abonnement croissants. Le moral des troupes est en chute libre.',
+    mop: 'Vends serpillière turbo. Elle a vu des choses.',
+    deo: 'Vends déodorant industriel, parfum « forêt de pins et chaussettes ».',
+    parquet: "Vends prolongation du parquet, le procureur n'en voulait plus.",
+    avocat: 'Vends machine à café pour avocats. Ils réclament déjà la nullité.',
+    xxl: "Vends salle d'attente XXL, légère odeur de manif.",
+    chains: 'Vends chaînes à neige, il a fait beau.',
+    visio: 'Vends visioconférence. On se reverra en vrai, en réunion.',
+    mailr: 'Vends « réunion qui aurait pu être un mail ». Il y aura donc une réunion.',
+  };
+
   const BUILDINGS = [
     { id: 'accueil', name: "Ouvrir l'accueil", cost: 60, desc: 'Le public entre, prend un ticket et vient déposer plainte.' },
     { id: 'plaintes', name: 'Ouvrir le bureau des plaintes', cost: 180, needs: 'accueil', desc: 'Les plaintes deviennent des dossiers traités, et des pistes pour les patrouilles.' },
@@ -282,5 +305,5 @@ window.PD = (function () {
   const eur = (n, dec) => fmt(n, dec) + ' €';
   const pick = a => a[Math.floor(Math.random() * a.length)];
 
-  return { T, ICONS, UNITS, UPGRADES, BUILDINGS, tier, RADIO, RADIO_BY, GOLDEN, PRIME_TALK, PROBLEMS, SITES, site, fmt, eur, pick };
+  return { T, ICONS, UNITS, UPGRADES, SELL, BUILDINGS, tier, RADIO, RADIO_BY, GOLDEN, PRIME_TALK, PROBLEMS, SITES, site, fmt, eur, pick };
 })();

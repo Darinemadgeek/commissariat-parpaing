@@ -370,6 +370,13 @@ window.GM = (function () {
     if (c > G.money) return false;
     G.money -= c; G.up[id]++; return true;
   }
+  // vide-grenier : on rend le dernier niveau acheté contre la moitié de son prix
+  const sellValue = u => (lv(u.id) > 0 ? 0.5 * u.base * Math.pow(u.g, lv(u.id) - 1) * (u.scale === 'cells' ? Math.max(1, G.n.cells / 4) : 1) : 0);
+  function sellUp(id) {
+    const u = UPG[id], v = sellValue(u);
+    if (!v) return 0;
+    G.up[id]--; G.money += v; return v;
+  }
   function build(id) {
     const b = BUILDINGS.find(q => q.id === id);
     if (G.built[id] || b.cost > G.money || (b.needs && !G.built[b.needs])) return false;
@@ -427,7 +434,7 @@ window.GM = (function () {
   return {
     G, T, ui, here, has, step, collect, weekStars, primeCalc, sigRate, satRate, cleanRate, propre, gavLimit, scandals, igpnLabel,
     gavValue, plaValue, tamponValue, tamponPush, capacity, hallCap, cellCap, unitCost, upCost, bulk, unitOn, upOn, lv, up, down,
-    buyUnit, buyUp, build, upTier, canMove, move, tampon, rate, save, load, golden, weekCapacity,
+    buyUnit, buyUp, sellUp, sellValue, build, upTier, canMove, move, tampon, rate, save, load, golden, weekCapacity,
     enqTime, ptsTime, plaTime, invPerMin, ptsPerMin, patrolPerMin, citPerMin, accPerMin, plaPerMin, cleanPerMin, lawK, valMult,
     perf: () => perf, lost: () => lostFlash > 0, buffOn,
     addBuff,

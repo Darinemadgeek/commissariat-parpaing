@@ -11,6 +11,7 @@ window.Tips = (function () {
   function withTemp(apply, fn) { const undo = apply(); try { return fn(); } finally { undo(); } }
   const plusUnit = (id, f) => withTemp(() => { G.n[id]++; return () => { G.n[id]--; }; }, f);
   const plusUp = (id, f) => withTemp(() => { G.up[id]++; return () => { G.up[id]--; }; }, f);
+  const minusUp = (id, f) => withTemp(() => { G.up[id]--; return () => { G.up[id]++; }; }, f);
   function box(o) {
     let h = `<strong>${o.title}</strong>`;
     if (o.text) h += `<p>${o.text}</p>`;
@@ -110,6 +111,12 @@ window.Tips = (function () {
       const u = UPGRADES.find(x => x.id === id), lines = UPM[id] || [];
       const rows = lines.map(([k, f]) => [k, arrow(f(), plusUp(id, f))]);
       return box({ title: `${u.name} · niveau ${GM.lv(id)} → ${GM.lv(id) + 1}`, text: u.desc + '.', rows, acts: UPA[id] });
+    }
+    if (kind === 'sell') {
+      const u = UPGRADES.find(x => x.id === id), l = GM.lv(id);
+      if (l < 1) return '';
+      const rows = [['Remboursement', eur(GM.sellValue(u))]].concat((UPM[id] || []).map(([k, f]) => [k, arrow(f(), minusUp(id, f))]));
+      return box({ title: `Revendre : ${u.name} · niveau ${l} → ${l - 1}`, text: 'Le vide-grenier du commissariat rachète le dernier niveau à moitié prix. Pratique si une amélioration a déséquilibré vos services (des enquêteurs trop rapides pour la PTS, par exemple).', rows, acts: UPA[id], tip: 'Deux clics : le premier arme la vente, le second la confirme.' });
     }
     if (kind === 'b') {
       if (id === 'accueil') return box({ title: "Ouvrir l'accueil", text: 'Le public entre, fait la queue au guichet et vient déposer plainte.', rows: [['Public attendu', pm(withTemp(() => { G.built.accueil = true; return () => { G.built.accueil = false; }; }, GM.citPerMin))]], acts: 'usagers (prime) et, avec le bureau des plaintes, des dossiers en plus.' });

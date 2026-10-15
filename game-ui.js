@@ -96,6 +96,30 @@
     b.onclick = () => { onClick(); render(); };
     c.upd(); list.appendChild(b); cards.push(c);
   }
+  // bouton « vide-grenier » sous un équipement acheté : un clic pour armer, un second pour vendre
+  function addSell(u) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'sell'; b.dataset.tip = 'sell:' + u.id;
+    let armed = 0;
+    const c = {
+      upd: () => {
+        const l = GM.lv(u.id); b.hidden = l < 1;
+        if (b.hidden) return;
+        const on = armed > Date.now(), v = GM.sellValue(u);
+        const txt = on ? `Confirmer la vente du niveau ${l} : +${eur(v)}` : `Revendre au vide-grenier · +${eur(v)}`;
+        if (b.textContent !== txt) b.textContent = txt;
+        b.classList.toggle('arm', on);
+      },
+    };
+    b.onclick = () => {
+      if (armed < Date.now()) { armed = Date.now() + 3000; c.upd(); return; }
+      armed = 0;
+      const v = GM.sellUp(u.id);
+      if (v > 0) toast(`Vide-grenier : « ${PD.SELL[u.id] || 'Vends ' + u.name.toLowerCase() + ', bon état.'} » +${eur(v)}`);
+      render();
+    };
+    c.upd(); list.appendChild(b); cards.push(c);
+  }
   function addEl(tag, cls, html, live) {
     const el = document.createElement(tag); el.className = cls;
     const c = { upd: () => { const h = typeof html === 'function' ? html() : html; if (h !== c.h) { c.h = h; el.innerHTML = h; } } };
@@ -108,7 +132,7 @@
     list.innerHTML = ''; cards = [];
     $('buyx').hidden = tab !== 'staff';
     const sec = t => addEl('div', 'section-t', t);
-    if (tab === 'staff' || tab === 'up') addEl('p', 'mini', TIP_HINT);
+    if (tab === 'staff' || tab === 'up') addEl('p', 'mini', TIP_HINT + (tab === 'up' ? ' Une amélioration déséquilibre vos services ? Revendez-la au vide-grenier du commissariat, à moitié prix.' : ''));
     if (tab === 'staff') {
       for (const u of UNITS) {
         if (!GM.unitOn(u)) continue;
@@ -122,6 +146,7 @@
       for (const u of UPGRADES) {
         if (!GM.upOn(u)) continue;
         mkCard(() => { const c = GM.upCost(u); return { icon: u.id, name: u.name, desc: u.desc, owned: 'niv. ' + G.up[u.id], cost: eur(c), can: c <= G.money }; }, () => { if (GM.buyUp(u.id)) toast(u.name + ' niveau ' + G.up[u.id] + ' !'); }, 'up:' + u.id);
+        addSell(u);
       }
     } else if (tab === 'build') {
       sec('Services');
