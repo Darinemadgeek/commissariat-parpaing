@@ -213,6 +213,17 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .golden .s1{top:-4px;left:14px} .golden .s2{top:8px;right:-2px;animation-delay:.45s} .golden .s3{bottom:6px;left:-2px;animation-delay:.9s}
 @keyframes spark{0%,100%{transform:scale(.2);opacity:0}50%{transform:scale(1.2);opacity:1}}
 
+/* note de service à l'arrivée dans un poste */
+.topoov{position:fixed;inset:0;z-index:60;background:rgba(10,14,32,.62);display:flex;align-items:center;justify-content:center;padding:16px}
+.topoov[hidden]{display:none}
+.topo{background:var(--paper);color:var(--paper-ink);font-family:var(--f-type);border-radius:8px;padding:18px 20px;max-width:520px;width:100%;max-height:calc(100vh - 32px);overflow:auto;box-shadow:0 6px 0 var(--line);font-size:14px;line-height:1.5}
+.topo h2{font-family:var(--f-display);margin:2px 0 8px;font-size:22px;line-height:1.15}
+.topo h3{margin:12px 0 4px;font-size:14px;text-transform:uppercase;letter-spacing:.04em}
+.topo ul{margin:0;padding-left:18px} .topo li{margin:3px 0} .topo p{margin:0 0 6px}
+.topo .topo-k{font-size:12px;opacity:.75;margin:0}
+.topo .go{display:block;margin-top:14px;width:100%;font-family:var(--f-display);font-size:16px;background:var(--gyro-blue);color:#fff;border:3px solid var(--paper-ink);border-radius:10px;padding:11px;cursor:pointer;box-shadow:0 4px 0 var(--paper-ink)}
+.topo-btn{font-family:var(--f-display);font-size:14px;background:var(--navy);color:var(--ink);border:2px solid var(--line);border-radius:12px;padding:10px 14px;cursor:pointer;box-shadow:0 3px 0 var(--line)}
+
 /* PV de fin de semaine */
 .pv{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-1.2deg);width:min(420px,calc(100% - 32px));background:var(--paper);color:var(--paper-ink);font-family:var(--f-type);padding:20px 22px;border-radius:4px;box-shadow:0 18px 40px rgba(0,0,0,.45);pointer-events:auto;animation:drop .35s cubic-bezier(.2,1.6,.4,1)}
 @keyframes drop{from{transform:translate(-50%,-80%) rotate(-6deg);opacity:0}}
@@ -422,6 +433,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 <script src="scene-core.js"></script>
 <script src="scene-people.js"></script>
 <div class="mapov" id="mapOv" hidden role="dialog" aria-label="Carte des affectations"></div>
+<div class="topoov" id="topoOv" hidden role="dialog" aria-modal="true" aria-label="Note de service du poste"></div>
 <div class="title" id="title">
   <img class="title-bg" src="img/titre.webp" alt="" aria-hidden="true">
   <img class="title-img" src="img/titre.webp" alt="Commissaire Parpaing : un commissariat en 3D, une voiture de police, un drapeau et un goéland">

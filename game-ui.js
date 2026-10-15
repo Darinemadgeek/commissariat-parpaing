@@ -65,6 +65,7 @@
     const v = GM.collect();
     if (v > 0) { floatAt('parp', '+' + eur(v) + ' PRIME'); toast('Prime encaissée : ' + eur(v)); }
     pvAuto = 0; $('pvSlot').innerHTML = '';
+    if (playing && !topoSeen()) setTimeout(showTopo, 300); // nouveau poste : la note de service suit le PV
   }
   Object.assign(GM.ui, { float: floatAt, toast, pv: showPV });
 
@@ -139,7 +140,7 @@
       closeMap(); pvAuto = 0; $('pvSlot').innerHTML = '';
       S.setSite(GM.here()); radio();
       toast(`Nouvelle partie ! Bienvenue à ${GM.here().name}.`);
-      shape = ''; render();
+      shape = ''; render(); showTopo();
     };
     c.upd(); list.appendChild(b); cards.push(c);
   }
@@ -206,6 +207,7 @@
         + Q.map(([k, l]) => `<button type="button" data-q="${k}" aria-pressed="${S.quality() === k}">${l}</button>`).join('') + '</div>';
       qb.querySelectorAll('button').forEach(b => { b.onclick = () => { S.setQuality(b.dataset.q); S.setSite(GM.here()); render(); toast('Qualité graphique : ' + b.textContent); }; });
       list.appendChild(qb);
+      const tb = document.createElement('button'); tb.type = 'button'; tb.className = 'topo-btn'; tb.textContent = 'Relire la note de service du poste'; tb.onclick = showTopo; list.appendChild(tb);
       addEl('div', 'dossier', () => {
         const p = GM.primeCalc(G.week), h = GM.here();
         return `<h3>Dossier du commissaire Parpaing</h3><dl>
@@ -354,10 +356,28 @@
         closeMap(); $('pvSlot').innerHTML = '';
         S.setSite(GM.here()); radio();
         toast(`Bienvenue à ${GM.here().name} ! Nouveau poste, nouveaux problèmes.`);
-        render();
+        render(); showTopo();
       }
     };
   }
+
+  // ---------- note de service : topo du poste et conseils, à l'arrivée ----------
+  const TOPO_KEY = 'parpaing-topo';
+  function showTopo() {
+    const h = GM.here(), b = PD.briefing(h), ov = $('topoOv');
+    ov.innerHTML = `<div class="topo" role="document">
+      <p class="topo-k">Note de service · poste n° ${G.site + 1} · ${h.kind}</p>
+      <h2>Commissariat ${PD.ofPlace(h.name)}</h2>
+      <p>${b.intro}</p>
+      ${b.problems.length ? '<h3>Ce qui vous attend</h3><ul>' + b.problems.map(p => `<li><b>${p.name}.</b> ${p.tip}</li>`).join('') + '</ul>' : ''}
+      <h3>3ᵉ étoile de la semaine</h3><p>${b.star}</p>
+      <h3>Rappels</h3><ul>${b.tips.map(t => `<li>${t}</li>`).join('')}</ul>
+      <button type="button" class="go" id="topoGo">Au travail !</button></div>`;
+    ov.hidden = false;
+    try { localStorage.setItem(TOPO_KEY, String(G.site)); } catch (e) { /* pas de stockage : la note reviendra */ }
+    const go = $('topoGo'); go.onclick = () => { ov.hidden = true; }; go.focus({ preventScroll: true });
+  }
+  const topoSeen = () => { try { return localStorage.getItem(TOPO_KEY) === String(G.site); } catch (e) { return true; } };
 
   // ---------- croissant doré ----------
   // un vrai croissant : segments feuilletés bombés, pointes, dégradé de cuisson, reflets de beurre
@@ -630,6 +650,7 @@
     setTimeout(() => { $('title').hidden = true; }, 450);
     if (welcome) setTimeout(() => toast(welcome), 500);
     if (G.pending) showPV();
+    else if (!topoSeen()) setTimeout(showTopo, 500);
   }
 
   function start(data) {

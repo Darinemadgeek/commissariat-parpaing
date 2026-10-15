@@ -41,6 +41,9 @@ Au-delà, des secteurs sans fin tirent 3 ou 4 problèmes au hasard.
   - et Amélie, la folle du bus, qui vide les cellules.
 - Survolez une stat ou une carte (appui long sur téléphone) pour voir exactement comment elle est calculée et ce qu'elle change.
 
+- À l'arrivée dans chaque poste, une **note de service** présente le lieu, ses problèmes avec un conseil pour chacun, le critère de la 3e étoile et quelques rappels. On la relit depuis l'onglet Dossier.
+- L'onglet Dossier propose aussi une **qualité graphique** : Auto, Économie (pour les vieux téléphones), Normale ou Belle.
+
 La partie est sauvegardée automatiquement dans le navigateur.
 
 ## Fichiers

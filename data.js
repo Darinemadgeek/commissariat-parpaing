@@ -97,15 +97,15 @@ window.PD = (function () {
 
   // Les commissariats de la carte : chacun garde au plus 3 problèmes actifs
   const PROBLEMS = {
-    vomi: { name: 'Vomi dans les couloirs', desc: "Les GAV ivres vomissent dans les couloirs. Chaque flaque fait glisser tout le monde et ralentit tous les services. Il faut une équipe de ménage." },
-    pieds: { name: 'Odeur de pieds', desc: "Certaines GAV puent tellement des pieds qu'un agent PTS sans masque à gaz travaille au ralenti et peut tomber dans les pommes." },
-    delai: { name: 'Délai légal et avocats', desc: "Une GAV dure 24 h maximum. Au-delà, elle est levée et le dossier est perdu. Les avocats font traîner les auditions." },
-    manif: { name: 'Manifestations', desc: "Chaque semaine, un jour annoncé dans la carte de la semaine, une manif amène des vagues entières d'interpellations, deux fois plus vite que les auditions. Le surplus doit tenir en salle d'attente, que les patrouilles laissent libre pour l'occasion." },
-    touristes: { name: 'Touristes', desc: "Trois fois plus de public, qui perd tout : lunettes, enfants, voiture de location. Les plaintes vont plus vite mais rapportent moitié moins. Il faut un accueil costaud." },
-    neige: { name: 'Tempêtes de neige', desc: "Régulièrement, une tempête bloque les patrouilles : seules les motoneiges continuent d'interpeller. Les chaînes à neige raccourcissent les tempêtes." },
-    interpretes: { name: 'Passagers étrangers', desc: "Une partie des GAV ne parle pas français : leur audition attend un interprète libre. De temps en temps, un colis suspect mobilise une partie de la PTS." },
-    vip: { name: 'GAV de stars', desc: "Des stars en garde à vue : elles rapportent dix fois plus, mais si elles sortent non signalisées ou restent trop longtemps, c'est le scandale. Un scandale divise la prime par deux, sauf si un chargé de com' l'étouffe." },
-    reunion: { name: 'Réunionite', desc: "Toutes les minutes, une réunion bloque une partie des enquêteurs." },
+    vomi: { name: 'Vomi dans les couloirs', desc: "Les GAV ivres vomissent dans les couloirs. Chaque flaque fait glisser tout le monde et ralentit tous les services. Il faut une équipe de ménage.", tip: "Recrutez des agents d'entretien dès les premières flaques : chaque flaque ralentit tous les services." },
+    pieds: { name: 'Odeur de pieds', desc: "Certaines GAV puent tellement des pieds qu'un agent PTS sans masque à gaz travaille au ralenti et peut tomber dans les pommes.", tip: "Un masque à gaz par agent PTS (onglet Matériel), sinon malaises. Le déodorant industriel réduit le nombre de GAV qui puent." },
+    delai: { name: 'Délai légal et avocats', desc: "Une GAV dure 24 h maximum. Au-delà, elle est levée et le dossier est perdu. Les avocats font traîner les auditions.", tip: "Gardez assez d'enquêteurs pour que personne n'attende : passé 24 h, la GAV est levée et le dossier perdu." },
+    manif: { name: 'Manifestations', desc: "Chaque semaine, un jour annoncé dans la carte de la semaine, une manif amène des vagues entières d'interpellations, deux fois plus vite que les auditions. Le surplus doit tenir en salle d'attente, que les patrouilles laissent libre pour l'occasion.", tip: "Le jour de la manif est annoncé dans la carte de la semaine : prévoyez des cellules, et tamponnez sans relâche ce jour-là." },
+    touristes: { name: 'Touristes', desc: "Trois fois plus de public, qui perd tout : lunettes, enfants, voiture de location. Les plaintes vont plus vite mais rapportent moitié moins. Il faut un accueil costaud.", tip: "Musclez l'accueil et les plaintes : trois fois plus de public, et chaque usager fâché fait baisser la prime." },
+    neige: { name: 'Tempêtes de neige', desc: "Régulièrement, une tempête bloque les patrouilles : seules les motoneiges continuent d'interpeller. Les chaînes à neige raccourcissent les tempêtes.", tip: "Achetez des motoneiges : pendant une tempête, ce sont les seules patrouilles qui interpellent. Les chaînes raccourcissent les tempêtes." },
+    interpretes: { name: 'Passagers étrangers', desc: "Une partie des GAV ne parle pas français : leur audition attend un interprète libre. De temps en temps, un colis suspect mobilise une partie de la PTS.", tip: "Recrutez des interprètes : sans eux, les auditions des étrangers attendent. Un colis suspect immobilise une partie de la PTS." },
+    vip: { name: 'GAV de stars', desc: "Des stars en garde à vue : elles rapportent dix fois plus, mais si elles sortent non signalisées ou restent trop longtemps, c'est le scandale. Un scandale divise la prime par deux, sauf si un chargé de com' l'étouffe.", tip: "Les stars rapportent dix fois plus : faites-les signaliser vite et embauchez un chargé de com' pour étouffer les scandales." },
+    reunion: { name: 'Réunionite', desc: "Toutes les minutes, une réunion bloque une partie des enquêteurs.", tip: "Prévoyez plus d'enquêteurs que nécessaire : une partie part régulièrement en réunion." },
   };
   const SITES = [
     { name: 'Saint-Glinglin-les-Choux', biome: 'campagne', kind: 'Campagne', problems: [], style: 'stone', star3: { id: 'sat', min: 0.9, label: 'Usagers bien reçus ≥ 90 %' },
@@ -316,7 +316,29 @@ window.PD = (function () {
   const eur = (n, dec) => fmt(n, dec) + ' €';
   const pick = a => a[Math.floor(Math.random() * a.length)];
 
+  // Note de service affichée à l'arrivée dans chaque poste : le topo du lieu, puis les conseils
+  const TOPO = {
+    campagne: "Votre premier poste : une gendarmerie de village entre les choux, les vaches et la mare aux canards. Aucun problème particulier ici : c'est le moment d'apprendre le métier.",
+    ville: "Une petite ville tranquille… jusqu'au samedi soir. Les gardés à vue arrivent éméchés et ne savent pas se tenir dans les couloirs.",
+    metropole: "Un grand hôtel de police haussmannien, des boulevards bouchés et des gardés à vue qui marchent toute la journée. Dans les cellules, ça sent fort.",
+    megapole: "Le quartier d'affaires : des tours de verre, des costumes et des avocats pressés. Ici, chaque heure de garde à vue compte.",
+    cite: "Un commissariat-bunker au pied des barres. Les manifestations arrivent par vagues, annoncées une semaine à l'avance.",
+    plage: "Le poste de plage, sur pilotis. L'été amène trois fois plus de public, qui perd tout : lunettes, enfants, voiture de location.",
+    neige: "Un chalet au pied des pistes. Les tempêtes bloquent les routes et les vacanciers ne tiennent pas l'altitude.",
+    aeroport: "Le poste de l'aéroport, tout en longueur. Des passagers du monde entier, des valises abandonnées et des vols qui n'attendent pas.",
+    festival: "Le festival : paillettes, tapis rouge et stars en garde à vue. Les paparazzis guettent le moindre scandale.",
+    ministere: "Le sommet de la carrière : une aile du ministère, place Beauvau. Les réunions s'enchaînent et l'IGPN passe en inspection.",
+  };
+  const GENERAL_TIPS = [
+    "Une GAV n'est bouclée que si une patrouille, un enquêteur et un agent PTS suivent : faites grandir les trois ensemble, avec un agent PTS de plus que d'enquêteurs.",
+    "Tamponnez vite et sans vous arrêter : la jauge « Coup de bourre » fait tourner tout le commissariat deux fois plus vite.",
+    "Attrapez les croissants dorés qui traversent l'écran, mais attention : certains sont des pièges.",
+  ];
+  function briefing(s) {
+    const intro = TOPO[s.biome] && !s.hard ? TOPO[s.biome] : `Secteur spécial : ${s.problems.length} problèmes tirés au hasard, plus coriaces qu'ailleurs. Lisez bien la liste avant de recruter.`;
+    return { intro, problems: s.problems.map(p => ({ name: PROBLEMS[p].name, tip: PROBLEMS[p].tip })), star: s.star3.label, tips: GENERAL_TIPS };
+  }
   // « commissariat de Grand-Bouchon », « des Deux-Moufles », « de la Place Beauvau », « du Festival de Cannettes »
   const ofPlace = n => (/^Les /.test(n) ? 'des ' + n.slice(4) : /^Le /.test(n) ? 'du ' + n.slice(3) : /^La /.test(n) ? 'de la ' + n.slice(3) : /^(Festival|Secteur) /.test(n) ? 'du ' + n.charAt(0).toLowerCase() + n.slice(1) : /^Place /.test(n) ? 'de la ' + n.charAt(0).toLowerCase() + n.slice(1) : 'de ' + n);
-  return { ofPlace, T, ICONS, UNITS, UPGRADES, SELL, BUILDINGS, tier, RADIO, RADIO_BY, GOLDEN, PRIME_TALK, PROBLEMS, SITES, site, fmt, eur, pick };
+  return { briefing, ofPlace, T, ICONS, UNITS, UPGRADES, SELL, BUILDINGS, tier, RADIO, RADIO_BY, GOLDEN, PRIME_TALK, PROBLEMS, SITES, site, fmt, eur, pick };
 })();
