@@ -45,6 +45,9 @@
 html,body{height:100%;margin:0}
 [hidden]{display:none!important}
 body{background:var(--night);color:var(--ink);font-family:var(--f-body);overflow:hidden;font-variant-numeric:tabular-nums}
+/* un jeu, pas une page : taper en boucle ne sélectionne pas le texte, pas de menu « Copier » ni de zoom au double tap */
+html,body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+button,[role="button"],.golden{touch-action:manipulation}
 button{font:inherit;color:inherit}
 button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 
