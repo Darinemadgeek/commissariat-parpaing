@@ -6,14 +6,14 @@ window.GM = (function () {
   const ui = { float() {}, toast() {}, pv() {}, fx: { arrive: 0, release: 0, citizen: 0, toPla: 0, angry: 0, toPts: 0 } };
   const UPG = Object.fromEntries(UPGRADES.map(u => [u.id, u]));
 
-  const newWeek = no => ({ no, t: 0, gav: 0, sig: 0, unsig: 0, pla: 0, recus: 0, partis: 0, lost: 0, earned: 0, levees: 0, malaises: 0, cleanSum: 0, tampons: 0, scandales: 0 });
+  const newWeek = no => ({ no, t: 0, inter: 0, gav: 0, sig: 0, unsig: 0, pla: 0, recus: 0, partis: 0, lost: 0, earned: 0, levees: 0, malaises: 0, cleanSum: 0, tampons: 0, scandales: 0 });
   function fresh(keep) {
     keep = keep || {};
     return {
       ver: 3, money: keep.money || 0, runEarned: 0, stars: keep.stars || 0, medals: keep.medals || 0,
       site: keep.site || 0, cstars: 0, galons: keep.galons || 0, siteStars: keep.siteStars || [],
       n: { patrols: 1, cells: 1, inv: 1, pts: 1, acc: 1, pla: 1, clean: 1, masks: 0, snow: 0, interp: 0, press: 0 },
-      up: Object.fromEntries(UPGRADES.map(u => [u.id, 0])),
+      up: Object.fromEntries(UPGRADES.map(u => [u.id, 0])), paid: {},
       built: { accueil: false, plaintes: false },
       tier: 0, det: [], hall: 0, cit: 0, citT: 0, plaQ: 0, plaW: [], pistes: 0,
       vomit: 0, cleanT: 0, ptsDown: [],
@@ -36,7 +36,7 @@ window.GM = (function () {
   const lv = id => G.up[id] || 0;
   const up = id => 1 + UPG[id].per * lv(id);            // bonus linéaire d'un équipement
   const down = id => Math.pow(1 - UPG[id].per, lv(id)); // réduction d'un équipement (multiplicative)
-  const valMult = () => Math.pow(1.6, G.tier) * up('lrp') * (1 + 0.1 * G.stars) * (1 + 0.5 * G.galons) * Math.pow(2, here().hard || 0)
+  const valMult = () => Math.pow(1.6, G.tier) * up('lrp') * (1 + 0.5 * G.galons) * Math.pow(2, here().hard || 0)
     * (buffOn('prefet') ? 3 : 1) * (buffOn('major') ? 3 : 1);
   const allSpeed = () => (buffOn('turbo') ? 2 : 1) * (buffOn('pizza') ? 1.25 : 1) * (buffOn('laurine') ? 0.95 : 1);
   const ptsBuff = () => (buffOn('maxime') ? 1.5 : 1) * (buffOn('lrpmail') ? 1.5 : 1) * (buffOn('corbeaux') ? 0.9 : 1);
@@ -94,7 +94,9 @@ window.GM = (function () {
     nolevee: { label: 'aucune GAV levée', ok: w => w.gav > 0 && w.levees === 0 },
     obj: { label: "objectif préfectoral atteint", ok: w => w.gav + w.pla >= G.objective },
   };
-  function rollIgpn() { const ids = Object.keys(IGPN).filter(k => k !== 'sat90' || G.built.accueil); G.igpn = ids[Math.floor(Math.random() * ids.length)]; }
+  // l'IGPN n'inspecte que là où elle donne la 3e étoile ; jamais « aucun relâché » un jour de manif
+  const igpnHere = () => here().star3.id === 'igpn';
+  function rollIgpn() { const ids = Object.keys(IGPN).filter(k => (k !== 'sat90' || G.built.accueil) && (k !== 'nolost' || !has('manif'))); G.igpn = ids[Math.floor(Math.random() * ids.length)]; }
   const igpnLabel = () => (IGPN[G.igpn] || IGPN.sig98).label;
   // Les 3 étoiles d'une semaine : objectif de dossiers, signalisation, critère du commissariat
   function weekStars(w) {
@@ -106,7 +108,7 @@ window.GM = (function () {
     else if (id === 'clean') s3 = any && cleanRate(w) >= 0.9;
     else if (id === 'faint') s3 = any && w.malaises === 0;
     else if (id === 'levee') s3 = any && w.levees === 0;
-    else if (id === 'lost') s3 = any && w.lost === 0;
+    else if (id === 'lost') s3 = any && w.lost <= T.LOST_TOL * (w.inter || 0);
     else if (id === 'scandal') s3 = any && scandals(w) === 0;
     else if (id === 'igpn') s3 = (IGPN[G.igpn] || IGPN.sig98).ok(w);
     return [s1, s2, s3];
@@ -130,7 +132,7 @@ window.GM = (function () {
     sig100: { w: 3, name: 'Zéro oubli', reward: 2, desc: () => 'Finissez la semaine à 100 % de signalisation, avec au moins 10 GAV auditionnées.', prog: w => ({ done: w.gav >= 10 && w.sig === w.gav, txt: w.gav ? `${w.sig}/${w.gav} signalisées` : '0 GAV' }) },
     sat95: { w: 2, ok: () => G.built.accueil, name: 'Accueil cinq étoiles', reward: 2, desc: () => "Au moins 95 % d'usagers bien reçus, sur 10 usagers minimum.", prog: w => { const n = w.recus + w.partis; return { done: n >= 10 && w.recus / n >= 0.95, txt: n ? `${pc(w.recus / n)} (${w.recus}/${n})` : '0 usager' }; } },
     pla: { w: 2, ok: () => G.built.plaintes, name: 'Opération guichet', reward: 1, target: () => Math.max(6, Math.round(G.objective * 0.5)), desc: q => `Traitez au moins ${q.target} plaintes cette semaine.`, prog: (w, q) => ({ done: w.pla >= q.target, txt: `${w.pla}/${q.target} plaintes` }) },
-    nolost: { w: 2, name: 'Pas un de perdu', reward: 1, desc: () => 'Aucun suspect relâché faute de place, avec au moins 10 GAV auditionnées.', prog: w => ({ done: w.gav >= 10 && w.lost === 0, txt: `${w.lost} relâché${w.lost > 1 ? 's' : ''} · ${w.gav} GAV` }) },
+    nolost: { w: 2, ok: () => !has('manif'), name: 'Pas un de perdu', reward: 1, desc: () => 'Aucun suspect relâché faute de place, avec au moins 10 GAV auditionnées.', prog: w => ({ done: w.gav >= 10 && w.lost === 0, txt: `${w.lost} relâché${w.lost > 1 ? 's' : ''} · ${w.gav} GAV` }) },
     tampon: { w: 2, name: "Bras d'acier", reward: 1, target: () => 150, desc: q => `Donnez ${q.target} coups de tampon cette semaine.`, prog: (w, q) => ({ done: w.tampons >= q.target, txt: `${w.tampons}/${q.target} coups` }) },
     clean97: { w: 2, ok: () => has('vomi'), name: 'Couloirs nickel', reward: 2, desc: () => 'Propreté moyenne des couloirs ≥ 97 % sur la semaine.', prog: w => ({ done: cleanRate(w) >= 0.97, txt: pc(cleanRate(w)) }) },
     nofaint: { w: 2, ok: () => has('pieds') && here().star3.id !== 'faint', name: 'Nez bouchés', reward: 1, desc: () => 'Aucun malaise à la PTS de toute la semaine.', prog: w => ({ done: w.malaises === 0 && w.gav > 0, txt: `${w.malaises} malaise${w.malaises > 1 ? 's' : ''}` }) },
@@ -194,6 +196,7 @@ window.GM = (function () {
     while (G.acc.patrol >= 1) {
       G.acc.patrol -= 1;
       if (G.pistes > 0) G.pistes--;
+      W.inter++;
       if (G.det.length < capacity()) { G.det.push(newDet()); fx.arrive++; }
       else if (G.hall < hallCap()) { G.hall++; fx.arrive++; }
       else { W.lost++; lostFlash = 6; }
@@ -313,7 +316,7 @@ window.GM = (function () {
     const gained = (p.n + bonus) * (dbl ? 2 : 1);
     G.cstars += gained;
     const crit3 = here().star3.id === 'igpn' ? `IGPN : ${igpnLabel()}` : here().star3.label;
-    G.pending = { no: w.no, ...p, quests, bonus, dbl, gained, gav: w.gav, sig: w.sig, pla: w.pla, lost: w.lost, recus: w.recus, partis: w.partis, earned: w.earned, objective: G.objective, levees: w.levees, malaises: w.malaises, clean: cleanRate(w), scandales: scandals(w), crit3 };
+    G.pending = { no: w.no, ...p, quests, bonus, dbl, gained, gav: w.gav, sig: w.sig, pla: w.pla, lost: w.lost, inter: w.inter, recus: w.recus, partis: w.partis, earned: w.earned, objective: G.objective, levees: w.levees, malaises: w.malaises, clean: cleanRate(w), scandales: scandals(w), crit3 };
     // objectif suivant : il suit vos résultats mais reste sous ~85 % de ce que vos équipes peuvent traiter
     const cap = Math.ceil(weekCapacity() * 0.85);
     const next = p.quota ? Math.ceil(p.dossiers * 1.1) : Math.ceil(G.objective * 0.9);
@@ -321,10 +324,10 @@ window.GM = (function () {
     if (p.n === 3) G.medals = Math.min(G.medals + 1, 6);
     G.week = newWeek(w.no + 1);
     rollQuests();
-    if (has('reunion')) rollIgpn();
+    if (igpnHere()) rollIgpn();
     ui.pv();
     if (G.quests.length) setTimeout(() => G.quests.forEach(q => { const i = questInfo(q); if (i) ui.toast(`Lundi : mission du préfet « ${i.name} » ! ${i.desc}${i.double ? '' : ` Récompense : +${i.reward} ★.`}`); }), 900);
-    if (has('reunion')) setTimeout(() => ui.toast(`Lundi : cette semaine, l'IGPN vérifie : ${igpnLabel()}.`), 1300);
+    if (igpnHere()) setTimeout(() => ui.toast(`Lundi : cette semaine, l'IGPN vérifie : ${igpnLabel()}.`), 1300);
     if (before < T.STARS_TO_MOVE && G.cstars >= T.STARS_TO_MOVE) setTimeout(() => ui.toast(`${T.STARS_TO_MOVE} étoiles ! Une mutation est possible : ouvrez la carte.`), 1700);
   }
   function collect() {
@@ -352,7 +355,10 @@ window.GM = (function () {
     else if (g.id === 'amelie') { const n = G.det.length + G.hall; G.det = []; G.hall = 0; ui.fx.release += Math.min(n, 6); msg += ` ${n} personne${n > 1 ? 's' : ''} dans la nature (sans effet sur vos stats).`; }
     else if (g.id === 'igpn') {
       const r2 = sigRate(G.week);
-      if (G.week.gav >= 5 && r2 >= 0.95) { G.cstars += 1; msg += ` Signalisation à ${pc(r2)} : félicitations, +1 ★ !`; }
+      if (G.week.gav >= 5 && r2 >= 0.95) {
+        G.cstars += 1; msg += ` Signalisation à ${pc(r2)} : félicitations, +1 ★ !`;
+        if (G.cstars === T.STARS_TO_MOVE) msg += ` ${T.STARS_TO_MOVE} étoiles : une mutation est possible, ouvrez la carte.`;
+      }
       else msg += G.week.gav < 5 ? ' Pas assez de GAV cette semaine pour juger. Rien à signaler.' : ` Signalisation à ${pc(r2)} : pas d'étoile cette fois (il faut 95 %).`;
     } else addBuff(g.id, g.dur, g.label, g.malus);
     G.goldenIn = 60 + Math.random() * 70;
@@ -368,13 +374,22 @@ window.GM = (function () {
   function buyUp(id) {
     const u = UPG[id], c = upCost(u);
     if (c > G.money) return false;
+    const p = G.paid[id]; // prix payé pour chaque niveau, pour le vide-grenier
+    if (Array.isArray(p) && p.length === lv(id)) p.push(c); else if (!lv(id)) G.paid[id] = [c];
     G.money -= c; G.up[id]++; return true;
   }
-  // vide-grenier : on rend le dernier niveau acheté contre la moitié de son prix
-  const sellValue = u => (lv(u.id) > 0 ? 0.5 * u.base * Math.pow(u.g, lv(u.id) - 1) * (u.scale === 'cells' ? Math.max(1, G.n.cells / 4) : 1) : 0);
+  // vide-grenier : on rend le dernier niveau acheté contre la moitié de ce qu'il a coûté
+  // (sans historique, d'une ancienne sauvegarde : la moitié du prix de ce niveau)
+  const paidFor = (id, l) => { const p = G.paid[id]; return Array.isArray(p) && p.length === l ? p[l - 1] : null; };
+  function sellValue(u) {
+    const l = lv(u.id); if (l < 1) return 0;
+    const p = paidFor(u.id, l);
+    return 0.5 * (p !== null ? p : u.base * Math.pow(u.g, l - 1) * (u.scale === 'cells' ? Math.max(1, G.n.cells / 4) : 1));
+  }
   function sellUp(id) {
     const u = UPG[id], v = sellValue(u);
     if (!v) return 0;
+    if (paidFor(id, lv(id)) !== null) G.paid[id].pop();
     G.up[id]--; G.money += v; return v;
   }
   function build(id) {
@@ -391,8 +406,9 @@ window.GM = (function () {
   function move() {
     if (!canMove()) return false;
     const ss = G.siteStars.slice(); ss[G.site] = G.cstars;
+    collect(); // la prime de la dernière semaine compte dans le dossier, même si le PV n'a pas été fermé
     reset(fresh({ stars: G.stars, medals: G.medals, galons: G.galons + 1, siteStars: ss, total: G.total, site: G.site + 1, money: 300 * (G.galons + 1) }));
-    if (has('reunion')) rollIgpn();
+    if (igpnHere()) rollIgpn();
     return true;
   }
   function tampon() {
@@ -404,6 +420,8 @@ window.GM = (function () {
     if (d) { d.e = Math.min(1, d.e + k); if (d.p > 0) d.p = Math.min(1, d.p + k); }
     return v;
   }
+  // tout effacer : nouvelle partie au premier commissariat
+  function newGame() { reset(fresh()); earnedLog = []; save(); }
   const rate = () => earnedLog.reduce((s, e) => s + e[1], 0) / Math.min(20, Math.max(5, perf));
 
   // ---------- sauvegarde ----------
@@ -423,6 +441,7 @@ window.GM = (function () {
     });
     m.det = (Array.isArray(d.det) ? d.det : []).map(x => ({ e: +x.e || 0, p: +x.p || 0, t: +x.t || 0, drunk: !!x.drunk, smelly: !!x.smelly, lawyer: !!x.lawyer, foreign: !!x.foreign, vip: !!x.vip, scandal: !!x.scandal }));
     m.plaW = Array.isArray(d.plaW) ? d.plaW : [];
+    m.paid = d.paid && typeof d.paid === 'object' ? d.paid : {};
     m.quests = Array.isArray(d.quests) ? d.quests.filter(q => q && QUESTS[q.id]) : [];
     if (!IGPN[m.igpn]) m.igpn = 'sig98';
     if (m.pending && !(m.pending.prime >= 0)) m.pending = null;
@@ -434,7 +453,7 @@ window.GM = (function () {
   return {
     G, T, ui, here, has, step, collect, weekStars, primeCalc, sigRate, satRate, cleanRate, propre, gavLimit, scandals, igpnLabel,
     gavValue, plaValue, tamponValue, tamponPush, capacity, hallCap, cellCap, unitCost, upCost, bulk, unitOn, upOn, lv, up, down,
-    buyUnit, buyUp, sellUp, sellValue, build, upTier, canMove, move, tampon, rate, save, load, golden, weekCapacity,
+    buyUnit, buyUp, sellUp, sellValue, build, upTier, canMove, move, tampon, rate, save, load, newGame, golden, weekCapacity,
     enqTime, ptsTime, plaTime, invPerMin, ptsPerMin, patrolPerMin, citPerMin, accPerMin, plaPerMin, cleanPerMin, lawK, valMult,
     perf: () => perf, lost: () => lostFlash > 0, buffOn,
     addBuff,

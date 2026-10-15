@@ -59,7 +59,7 @@
     if (id === 'levee') return p.levees + ' levée' + (p.levees > 1 ? 's' : '');
     if (id === 'scandal') return p.scandales + ' scandale' + (p.scandales > 1 ? 's' : '');
     if (id === 'igpn') return p.st[2] ? 'respecté' : 'non respecté';
-    return p.lost + ' relâché' + (p.lost > 1 ? 's' : '');
+    return p.lost + ' relâché' + (p.lost > 1 ? 's' : '') + (p.inter ? ` (${pct(p.lost / p.inter)})` : '');
   }
   function collect() {
     const v = GM.collect();
@@ -120,13 +120,36 @@
     };
     c.upd(); list.appendChild(b); cards.push(c);
   }
+  // nouvelle partie : un clic pour armer, un second pour tout effacer
+  function addRestart() {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'sell restart';
+    let armed = 0;
+    const c = {
+      upd: () => {
+        const on = armed > Date.now(), txt = on ? 'Confirmer : effacer la partie et repartir de zéro' : 'Recommencer une partie';
+        if (b.textContent !== txt) b.textContent = txt;
+        b.classList.toggle('arm', on);
+      },
+    };
+    b.onclick = () => {
+      if (armed < Date.now()) { armed = Date.now() + 3000; c.upd(); return; }
+      armed = 0;
+      GM.newGame();
+      closeMap(); pvAuto = 0; $('pvSlot').innerHTML = '';
+      S.setSite(GM.here());
+      toast(`Nouvelle partie ! Bienvenue à ${GM.here().name}.`);
+      shape = ''; render();
+    };
+    c.upd(); list.appendChild(b); cards.push(c);
+  }
   function addEl(tag, cls, html, live) {
     const el = document.createElement(tag); el.className = cls;
     const c = { upd: () => { const h = typeof html === 'function' ? html() : html; if (h !== c.h) { c.h = h; el.innerHTML = h; } } };
     c.upd(); list.appendChild(el); if (live) cards.push(c);
   }
   const zoneOf = id => ({ patrols: 'cars', cells: 'cells', inv: 'inv', pts: 'pts', acc: 'acc', pla: 'pla', clean: 'clean', masks: 'pts', snow: 'cars', interp: 'inv', press: 'acc' })[id];
-  const TIP_HINT = matchMedia('(max-width:860px)').matches ? 'Appui long sur une carte : le détail de ce qu\'elle change.' : 'Survolez une carte : le détail de ce qu\'elle change.';
+  const TIP_HINT = matchMedia('(hover: none)').matches ? 'Appui long sur une carte : le détail de ce qu\'elle change.' : 'Survolez une carte : le détail de ce qu\'elle change.';
   function rebuild() {
     const scroll = list.scrollTop;
     list.innerHTML = ''; cards = [];
@@ -193,6 +216,7 @@
       const h = GM.here();
       if (h.problems.length) addEl('p', 'mini', '<b>Problèmes de ce commissariat.</b><br>' + h.problems.map(k => `<b>${PROBLEMS[k].name} :</b> ${PROBLEMS[k].desc}`).join('<br>'));
       addEl('p', 'mini', () => `<b>Cycle d'une GAV.</b> Une patrouille ramène un suspect en cellule. Un enquêteur l'auditionne (${fmt(GM.enqTime(false), 1)} s) et, en même temps, un agent PTS le signalise (${fmt(GM.ptsTime(false), 1)} s). À la fin de l'audition, si sa signalisation a commencé, la GAV attend qu'elle se termine (${T.PTS_WAIT} s au plus) ; si aucun agent PTS n'a pu s'en occuper, elle sort non signalisée. Comme une signalisation est plus longue qu'une audition, il faut un peu plus d'agents PTS que d'enquêteurs, ou la borne biométrique.<br><br><b>Étoiles de la semaine.</b> 1 étoile si la jauge d'objectif est pleine, 1 si la signalisation atteint 95 %, 1 pour le critère local : ${(h.star3.id === 'igpn' ? 'IGPN : ' + GM.igpnLabel() : h.star3.label).toLowerCase()}. À ${T.STARS_TO_MOVE} étoiles, vous pouvez demander votre mutation sur la carte.<br><br><b>Missions du préfet.</b> Certains lundis, une ou deux missions apparaissent dans la carte de la semaine. Réussies dimanche soir, elles rapportent des étoiles en plus ; la « Semaine étoilée » double toutes les étoiles.<br><br><b>Prime.</b> Versée seulement si la jauge d'objectif est pleine : 25 % des recettes de la semaine, réduite si la PTS ne suit pas (rien sous 70 %) ou si des usagers repartent fâchés, +20 % par étoile.<br><br><b>Astuces.</b> Les plaintes donnent des pistes : les patrouilles vont 50 % plus vite tant qu'il en reste. Le tampon accélère un peu la GAV la plus ancienne. Attrapez les croissants dorés (attention, certains sont des pièges).`, true);
+      addRestart();
     }
     list.scrollTop = scroll;
   }
@@ -270,21 +294,26 @@
   function closeMap() { $('mapOv').hidden = true; }
   $('mapBtn').onclick = openMap;
   $('mapOv').addEventListener('click', e => { if (e.target.id === 'mapOv') closeMap(); });
+  // dans les secteurs sans fin, le dernier nœud est le poste actuel et un nœud de plus montre la mutation suivante
+  const NODE_HERE = [560, 45], NODE_NEXT = [660, 100];
   function drawMap() {
-    const n = NODES.length, cur = G.site;
-    const path = NODES.map((p, i) => (i ? 'L' : 'M') + p[0] + ' ' + p[1]).join(' ');
+    const cur = G.site, last = NODES.length - 1;
+    const spots = NODES.map((p, i) => ({ p, idx: i < last ? i : Math.max(last, cur) }));
+    if (cur >= last) { spots[last].p = NODE_HERE; spots.push({ p: NODE_NEXT, idx: cur + 1 }); }
+    const path = spots.map((s, i) => (i ? 'L' : 'M') + s.p[0] + ' ' + s.p[1]).join(' ');
     let svg = `<svg class="mapsvg" viewBox="0 0 720 470" role="group" aria-label="Commissariats">
       <rect width="720" height="470" fill="#e9dfc4"/>
       <path d="M0 430 Q160 360 320 450 T720 400 V470 H0Z" fill="#cfe3b5"/><path d="M430 0 Q540 130 720 120 V0Z" fill="#c9d3dd"/><path d="M520 470 Q600 380 720 420 V470Z" fill="#9fd3ff"/>
       <path d="${path}" fill="none" stroke="#8a6d4a" stroke-width="10" stroke-linecap="round" stroke-dasharray="2 16"/>`;
-    for (let i = 0; i < n; i++) {
-      const [x, y] = NODES[i], idx = i < n - 1 ? i : Math.max(n - 1, cur), s = site(idx);
+    for (const { p: [x, y], idx } of spots) {
+      const s = site(idx);
       const done = idx < cur, here = idx === cur, next = idx === cur + 1, ring = here ? '#3d7bff' : done ? '#c48a00' : next ? '#e63946' : '#9aa0aa';
+      const anchor = x < 110 ? 'start" x="-30' : 'middle'; // le nom du premier poste ne déborde pas à gauche
       svg += `<g class="node" tabindex="0" data-i="${idx}" transform="translate(${x} ${y})">
         <circle r="30" fill="${done || here ? '#ffffff' : '#f4efe1'}" stroke="${ring}" stroke-width="${sel === idx ? 7 : 4}" class="ring"/>
         <g opacity="${done || here || next ? 1 : 0.45}" transform="scale(.9)">${ICON[s.biome]}</g>
-        <text y="46" text-anchor="middle" font-family="Rubik, sans-serif" font-weight="800" font-size="12.5" fill="#2a2833">${i === n - 1 && idx >= n - 1 && cur < n - 1 ? 'Secteurs suivants' : (i + 1 <= 10 ? (idx + 1) + '. ' : '') + s.name}</text>
-        <text y="61" text-anchor="middle" font-family="Rubik, sans-serif" font-size="12" fill="#5a5560">${here ? 'Vous êtes ici · ★ ' + Math.min(G.cstars, T.STARS_TO_MOVE) + '/' + T.STARS_TO_MOVE : done ? 'Terminé ★ ' + (G.siteStars[idx] || T.STARS_TO_MOVE) : next ? 'Prochaine mutation' : 'Verrouillé'}</text>
+        <text y="46" text-anchor="${anchor}" font-family="Rubik, sans-serif" font-weight="800" font-size="12.5" fill="#2a2833">${idx > cur + 1 ? 'Secteurs suivants' : idx < last ? (idx + 1) + '. ' + s.name : s.name.replace('Secteur Parpaing', 'Secteur')}</text>
+        <text y="61" text-anchor="${anchor}" font-family="Rubik, sans-serif" font-size="12" fill="#5a5560">${here ? 'Vous êtes ici · ★ ' + Math.min(G.cstars, T.STARS_TO_MOVE) + '/' + T.STARS_TO_MOVE : done ? 'Terminé ★ ' + (G.siteStars[idx] || T.STARS_TO_MOVE) : next ? 'Prochaine mutation' : 'Verrouillé'}</text>
       </g>`;
     }
     svg += '</svg>';
@@ -430,6 +459,10 @@
     else if (GM.has('vip') && GM.scandals(W) > 0) { msg = "Scandale de star ! La prime est divisée par deux : recrutez un chargé de com'."; lvl = 'bad'; }
     else if (GM.has('reunion') && G.meetLeft > 0) { msg = 'Réunion en cours : une partie des enquêteurs a quitté son bureau.'; lvl = 'warn'; }
     else if (G.manifLeft > 0) { msg = 'Manifestation en cours : il faut de la place en cellule.'; lvl = 'warn'; }
+    else if (GM.has('manif') && W.lost > 0 && GM.invPerMin() < GM.patrolPerMin() * T.MANIF_MULT) {
+      // une manif triple les interpellations : seuls des enquêteurs en réserve vident les cellules à temps
+      msg = `Prochaine manif dans ${Math.ceil(G.manifIn)} s : gardez des enquêteurs en réserve (${fmt(GM.invPerMin())} auditions/min pour ${fmt(GM.patrolPerMin() * T.MANIF_MULT)} interpellations/min pendant une manif).`; lvl = 'warn';
+    }
     else if (GM.has('pieds') && smellyNow && G.n.masks < G.n.pts) { msg = 'Ça sent les pieds : équipez la PTS de masques à gaz.'; lvl = 'bad'; }
     else if (GM.has('vomi') && GM.propre() < 0.8) { msg = 'Du vomi partout dans les couloirs : recrutez des agents d\'entretien.'; lvl = 'bad'; }
     else if (GM.has('delai') && W.levees > 0 && toAudit > G.n.inv) { msg = 'Des GAV dépassent le délai légal : il faut plus d\'enquêteurs.'; lvl = 'bad'; }

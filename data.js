@@ -47,7 +47,8 @@ window.PD = (function () {
     LAWYER_SLOW: 0.6,
     MANIF_EVERY: 140,
     MANIF_LEN: 25,
-    MANIF_MULT: 5,
+    MANIF_MULT: 3,
+    LOST_TOL: 0.1,          // étoile « relâchés » : au plus 10 % des interpellations de la semaine
   };
 
   const C = (bg, fg, path) => ({ bg, svg: `<svg viewBox="0 0 32 32" aria-hidden="true"><g fill="${fg}">${path}</g></svg>` });
@@ -93,12 +94,12 @@ window.PD = (function () {
     vomi: { name: 'Vomi dans les couloirs', desc: "Les GAV ivres vomissent dans les couloirs. Chaque flaque fait glisser tout le monde et ralentit tous les services. Il faut une équipe de ménage." },
     pieds: { name: 'Odeur de pieds', desc: "Certaines GAV puent tellement des pieds qu'un agent PTS sans masque à gaz travaille au ralenti et peut tomber dans les pommes." },
     delai: { name: 'Délai légal et avocats', desc: "Une GAV dure 24 h maximum. Au-delà, elle est levée et le dossier est perdu. Les avocats font traîner les auditions." },
-    manif: { name: 'Manifestations', desc: "Régulièrement, une manif amène des vagues entières d'interpellations. Il faut de la place en cellule et en salle d'attente." },
+    manif: { name: 'Manifestations', desc: "Régulièrement, une manif amène des vagues entières d'interpellations. Il faut de la place en cellule, en salle d'attente, et des enquêteurs en réserve pour vider les cellules à temps." },
     touristes: { name: 'Touristes', desc: "Trois fois plus de public, qui perd tout : lunettes, enfants, voiture de location. Les plaintes vont plus vite mais rapportent moitié moins. Il faut un accueil costaud." },
     neige: { name: 'Tempêtes de neige', desc: "Régulièrement, une tempête bloque les patrouilles : seules les motoneiges continuent d'interpeller. Les chaînes à neige raccourcissent les tempêtes." },
     interpretes: { name: 'Passagers étrangers', desc: "Une partie des GAV ne parle pas français : leur audition attend un interprète libre. De temps en temps, un colis suspect mobilise une partie de la PTS." },
     vip: { name: 'GAV de stars', desc: "Des stars en garde à vue : elles rapportent dix fois plus, mais si elles sortent non signalisées ou restent trop longtemps, c'est le scandale. Un scandale divise la prime par deux, sauf si un chargé de com' l'étouffe." },
-    reunion: { name: 'Réunionite', desc: "Toutes les minutes, une réunion bloque une partie des enquêteurs. Et chaque semaine, l'IGPN inspecte un critère tiré au sort." },
+    reunion: { name: 'Réunionite', desc: "Toutes les minutes, une réunion bloque une partie des enquêteurs." },
   };
   const SITES = [
     { name: 'Saint-Parpaing-les-Choux', biome: 'campagne', kind: 'Campagne', problems: [], style: 'stone', star3: { id: 'sat', min: 0.9, label: 'Usagers bien reçus ≥ 90 %' },
@@ -109,7 +110,7 @@ window.PD = (function () {
       pitch: 'Des gardés à vue qui sentent si fort des pieds que la PTS tombe dans les pommes. Masques à gaz obligatoires.' },
     { name: 'Parpaing-la-Défense', biome: 'megapole', kind: 'Mégapole', problems: ['vomi', 'pieds', 'delai'], style: 'glass', star3: { id: 'levee', label: 'Aucune GAV levée' },
       pitch: "Des avocats d'affaires partout. Passé le délai légal, la GAV est levée et le dossier part à la poubelle." },
-    { name: 'Parpaing-Nord', biome: 'cite', kind: 'Banlieue', problems: ['pieds', 'delai', 'manif'], style: 'bunker', star3: { id: 'lost', label: 'Aucun relâché faute de place' },
+    { name: 'Parpaing-Nord', biome: 'cite', kind: 'Banlieue', problems: ['pieds', 'delai', 'manif'], style: 'bunker', star3: { id: 'lost', label: 'Relâchés faute de place ≤ 10 %' },
       pitch: 'Une manif par jour, minimum. Les interpellations arrivent par cars entiers.' },
     { name: 'Parpaing-Plage', biome: 'plage', kind: 'Bord de mer', problems: ['touristes', 'pieds', 'vomi'], style: 'beach', star3: { id: 'sat', min: 0.85, label: 'Usagers bien reçus ≥ 85 %' },
       pitch: 'Tongs, sangria et coups de soleil. Les touristes perdent tout, les mouettes volent le reste.' },
@@ -128,8 +129,8 @@ window.PD = (function () {
   const STYLE_OF = { ville: 'classic', metropole: 'modern', megapole: 'glass', cite: 'bunker', plage: 'beach', neige: 'chalet', aeroport: 'airport', festival: 'fest', ministere: 'palace' };
   const STAR3_OF = {
     vomi: { id: 'clean', label: 'Propreté des couloirs ≥ 90 %' }, pieds: { id: 'faint', label: 'Aucun malaise à la PTS' },
-    delai: { id: 'levee', label: 'Aucune GAV levée' }, manif: { id: 'lost', label: 'Aucun relâché faute de place' },
-    touristes: { id: 'sat', min: 0.85, label: 'Usagers bien reçus ≥ 85 %' }, neige: { id: 'lost', label: 'Aucun relâché faute de place' },
+    delai: { id: 'levee', label: 'Aucune GAV levée' }, manif: { id: 'lost', label: 'Relâchés faute de place ≤ 10 %' },
+    touristes: { id: 'sat', min: 0.85, label: 'Usagers bien reçus ≥ 85 %' }, neige: { id: 'lost', label: 'Relâchés faute de place ≤ 10 %' },
     interpretes: { id: 'levee', label: 'Aucune GAV levée' }, vip: { id: 'scandal', label: 'Aucun scandale de star' },
     reunion: { id: 'igpn', label: "Inspection de l'IGPN réussie" },
   };
@@ -141,7 +142,7 @@ window.PD = (function () {
     const pool = ALLP.slice(), probs = [];
     while (probs.length < 3 + (k % 2)) probs.push(pool.splice(Math.floor(r() * pool.length), 1)[0]);
     const biome = BIOMES[Math.floor(r() * BIOMES.length)];
-    return { name: `Secteur Parpaing ${k + 1}`, biome, kind: 'Secteur spécial', problems: probs, style: STYLE_OF[biome], hard: k, star3: STAR3_OF[probs[0]],
+    return { name: `Secteur Parpaing ${k}`, biome, kind: 'Secteur spécial', problems: probs, style: STYLE_OF[biome], hard: k, star3: STAR3_OF[probs[0]],
       pitch: 'Plusieurs problèmes tirés au sort, en plus gros. Le préfet compte sur vous.' };
   }
 
