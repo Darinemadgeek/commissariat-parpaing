@@ -2,7 +2,8 @@
 // Le commissariat occupe l'îlot x -28..28, z -28..16 ; des rues l'entourent.
 (function () {
   const { THREE, scene, mat, box, cyl, ball, flat, sign, figure, onFrame, setSky } = S;
-  let env = null, traffic = [], spinners = [], seed = 1;
+  let env = null, traffic = [], spinners = [], anims = [], seed = 1;
+  const EXTRA = {}; // décors ajoutés par scene-world2.js (plage, neige, aéroport, festival, ministère)
   const rand = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
   const rr = (a, b) => a + rand() * (b - a);
   const pick = a => a[Math.floor(rand() * a.length)];
@@ -175,7 +176,7 @@
       for (let k = 0; k < 3; k++) { const b = box(hub, 0.6, 12, 0.2, '#ffffff', 0, 0, 0); b.geometry = b.geometry; const piv = new THREE.Group(); piv.rotation.z = (k * Math.PI * 2) / 3; piv.add(b); hub.add(piv); }
       spinners.push(hub);
     });
-    for (let i = 0; i < 60; i++) { const a = rand() * 6.28, r = rr(45, 160); tree(p, Math.cos(a) * r, Math.sin(a) * r, rr(0.8, 1.4), r < 70); }
+    for (let i = 0; i < (S.low ? 30 : 60); i++) { const a = rand() * 6.28, r = rr(45, 160); tree(p, Math.cos(a) * r, Math.sin(a) * r, rr(0.8, 1.4), r < 70); }
     addTraffic(p, 5, false, 300, true);
   }
 
@@ -185,6 +186,7 @@
     metropole: { sky: '#b9d3e6', ground: '#8e9b8a', styles: ['beton', 'verre', 'haussmann', 'brique', 'beton'], fl: [5, 10], tower: 0.3, tf: [14, 26], cars: 34 },
     megapole: { sky: '#f7b38c', ground: '#5d6470', styles: ['nuit', 'verre', 'nuit', 'beton'], fl: [8, 16], tower: 0.65, tf: [22, 55], cars: 44, dusk: true },
     cite: { sky: '#c3cad4', ground: '#7f8a7c', styles: ['hlm', 'hlm', 'beton', 'brique'], fl: [6, 12], tower: 0.2, tf: [14, 18], cars: 30, slabs: true },
+    ministere: { sky: '#bcd6f0', ground: '#a9b3a0', styles: ['haussmann', 'haussmann', 'haussmann', 'brique'], fl: [4, 7], tower: 0, tf: [8, 10], cars: 30, reserve: [2, 3] },
   };
   function city(p, kind) {
     const C = CITY[kind];
@@ -195,7 +197,9 @@
       const x0 = XS[i] + 4, x1 = XS[i + 1] - 4, z0 = ZS[j] + 4, z1 = ZS[j + 1] - 4;
       if (isLot(x0, x1, z0, z1)) continue;
       const cx = (x0 + x1) / 2, cz = (z0 + z1) / 2, near = Math.hypot(cx, cz) < 90;
+      if (S.low && Math.hypot(cx, cz) > 140) continue; // téléphone : on allège les quartiers lointains (cachés par la brume)
       box(p, x1 - x0, 0.15, z1 - z0, '#c9c4b8', cx, 0, cz);
+      if (C.reserve && C.reserve[0] === i && C.reserve[1] === j) continue; // pâté gardé libre pour un monument
       if (kind === 'ville' && i === 3 && j === 3) { park(p, x0, x1, z0, z1); continue; }
       if (kind === 'cite' && i === 1 && j === 3) { court(p, x0, x1, z0, z1); continue; }
       const m = 2, X0 = x0 + m, X1 = x1 - m, Z0 = z0 + m, Z1 = z1 - m;
@@ -209,7 +213,7 @@
       for (let k = 0; k < 4; k++) tree(p, x0 + 1 + k * (x1 - x0 - 2) / 3, z1 + 1.2, 0.7, near);
     }
     // silhouette lointaine
-    for (let i = 0; i < 70; i++) {
+    for (let i = 0; i < (S.low ? 25 : 70); i++) {
       const a = rand() * 6.28, r = rr(205, 300), h = C.dusk ? rr(30, 140) : rr(12, 60);
       const b = box(p, rr(10, 22), h, rr(10, 22), C.dusk ? '#4a4f6a' : '#a3adb8', Math.cos(a) * r, 0, Math.sin(a) * r); b.castShadow = false;
     }
@@ -238,9 +242,9 @@
 
   function build(biome) {
     if (env) { scene.remove(env); env.traverse(o => { if (o.geometry && !o.geometry.parameters) o.geometry.dispose(); }); }
-    env = new THREE.Group(); scene.add(env); traffic = []; spinners = [];
-    seed = { campagne: 11, ville: 22, metropole: 33, megapole: 44, cite: 55 }[biome] || 7;
-    if (biome === 'campagne') campagne(env); else city(env, biome);
+    env = new THREE.Group(); scene.add(env); traffic = []; spinners = []; anims = [];
+    seed = { campagne: 11, ville: 22, metropole: 33, megapole: 44, cite: 55, plage: 66, neige: 77, aeroport: 88, festival: 99, ministere: 111 }[biome] || 7;
+    if (EXTRA[biome]) EXTRA[biome](env); else if (biome === 'campagne') campagne(env); else city(env, CITY[biome] ? biome : 'ville');
   }
 
   onFrame((dt, t) => {
@@ -251,7 +255,11 @@
       else { c.position.set(u.L.c, 0, u.s); c.rotation.y = u.sp > 0 ? -Math.PI / 2 : Math.PI / 2; }
     }
     for (const s of spinners) s.rotation.z = t * 0.8;
+    for (const a of anims) a(dt, t);
   });
 
-  S.world = { build, building, carMesh };
+  S.world = {
+    build, building, carMesh, tree, roads, addTraffic, city, EXTRA,
+    rand: () => rand(), rr, pick, anim: f => anims.push(f), spin: o => spinners.push(o),
+  };
 })();

@@ -15,7 +15,23 @@ window.PD = (function () {
     HALL: 4,
     PRIME_BASE: 0.25,
     OBJ_START: 8,
-    STARS_TO_MOVE: 100,     // étoiles à gagner dans un commissariat pour être muté (3 max par semaine)
+    STARS_TO_MOVE: 75,      // étoiles à gagner dans un commissariat pour être muté (3 par semaine + missions)
+    PISTE_BOOST: 1.5,       // patrouilles plus rapides tant qu'il reste des pistes
+    TOURIST_MULT: 3,        // touristes : public ×3, plaintes plus rapides mais moins payées
+    TOURIST_VALUE: 0.5,
+    TOURIST_SPEED: 1.6,
+    STORM_EVERY: 110,       // neige : tempête régulière qui bloque les patrouilles sans motoneige
+    STORM_LEN: 20,
+    FOREIGN: 0.3,           // aéroport : GAV étrangères qui attendent un interprète
+    COLIS_EVERY: 90,        // colis suspect : une partie de la PTS est mobilisée
+    COLIS_LEN: 15,
+    COLIS_SHARE: 0.3,
+    VIP: 0.1,               // festival : GAV de stars
+    VIP_MULT: 10,
+    VIP_MAX_T: 40,          // au-delà, la star fait scandale
+    MEETING_EVERY: 60,      // ministère : réunions qui bloquent des enquêteurs
+    MEETING_LEN: 15,
+    MEETING_SHARE: 0.4,
     // problèmes des commissariats suivants
     DRUNK: 0.3,             // part des GAV ivres (vomi)
     VOMIT_EVERY: 14,        // s entre deux vomis par GAV ivre
@@ -63,17 +79,28 @@ window.PD = (function () {
     parquet: C('#7a1f2b', '#ffd9a0', '<rect x="14.5" y="4" width="3" height="20"/><path d="M5 10h22l-4 7H9z"/><rect x="8" y="25" width="16" height="3"/>'),
     avocat: C('#1a1a1a', '#ffffff', '<path d="M9 6h14l3 22H6z"/><path d="M14 6l2 6 2-6z" fill="#1a1a1a"/><rect x="15" y="12" width="2" height="9" fill="#1a1a1a"/>'),
     xxl: C('#ff7b1c', '#3a1a00', '<rect x="4" y="10" width="24" height="14" rx="2"/><path d="M8 14l4 6M12 14l-4 6M15 14l4 6M19 14l-4 6M22 14v6h4" stroke="#fff" stroke-width="1.8" fill="none"/>'),
+    snow: C('#e8f4ff', '#1b2a5c', '<path d="M4 22h18l6-6h-6l-3-5H9l-3 5H4z"/><rect x="3" y="24" width="26" height="2.5" rx="1"/><rect x="10" y="7" width="7" height="4" rx="2" fill="#ff4b5c"/>'),
+    interp: C('#ffe066', '#3a2700', '<path d="M5 6h13v9H10l-4 4v-4H5z"/><path d="M14 13h13v9h-1v4l-4-4h-8z" fill="#3d7bff"/><rect x="8" y="9" width="7" height="1.6" fill="#ffe066"/><rect x="17" y="16" width="7" height="1.6" fill="#fff"/>'),
+    press: C('#ff8fb8', '#3a0d1f', '<rect x="5" y="11" width="22" height="14" rx="2"/><circle cx="16" cy="18" r="5" fill="#ff8fb8"/><circle cx="16" cy="18" r="2.5"/><rect x="9" y="7" width="7" height="4" rx="1"/><path d="M24 4l2 4M28 8l-3 1" stroke="#3a0d1f" stroke-width="1.6"/>'),
+    chains: C('#cfe3ff', '#1b2a5c', '<circle cx="9" cy="16" r="5" fill="none" stroke="#1b2a5c" stroke-width="2.6"/><circle cx="16" cy="16" r="5" fill="none" stroke="#3d7bff" stroke-width="2.6"/><circle cx="23" cy="16" r="5" fill="none" stroke="#1b2a5c" stroke-width="2.6"/>'),
+    visio: C('#24377a', '#9cc2ff', '<rect x="4" y="7" width="18" height="14" rx="2"/><path d="M22 12l6-4v12l-6-4z"/><circle cx="13" cy="13" r="3" fill="#24377a"/><rect x="9" y="17" width="8" height="3" rx="1.5" fill="#24377a"/>'),
+    mailr: C('#fbf4dc', '#2a2833', '<rect x="4" y="8" width="24" height="16" rx="2" fill="#fff" stroke="#2a2833" stroke-width="2"/><path d="M5 9l11 8 11-8" fill="none" stroke="#2a2833" stroke-width="2"/>'),
   };
 
-  // Les commissariats de la carte : chacun ajoute son problème
+  // Les commissariats de la carte : chacun garde au plus 3 problèmes actifs
   const PROBLEMS = {
-    vomi: { name: 'Vomi dans les couloirs', desc: "Les GAV ivres vomissent dans les couloirs. Plus il y a de flaques, plus tout le monde glisse et ralentit. Il faut une équipe de ménage." },
-    pieds: { name: 'Odeur de pieds', desc: "Certaines GAV puent tellement des pieds que la PTS sans masque à gaz travaille au ralenti et tombe dans les pommes." },
+    vomi: { name: 'Vomi dans les couloirs', desc: "Les GAV ivres vomissent dans les couloirs. Chaque flaque fait glisser tout le monde et ralentit tous les services. Il faut une équipe de ménage." },
+    pieds: { name: 'Odeur de pieds', desc: "Certaines GAV puent tellement des pieds qu'un agent PTS sans masque à gaz travaille au ralenti et peut tomber dans les pommes." },
     delai: { name: 'Délai légal et avocats', desc: "Une GAV dure 24 h maximum. Au-delà, elle est levée et le dossier est perdu. Les avocats font traîner les auditions." },
     manif: { name: 'Manifestations', desc: "Régulièrement, une manif amène des vagues entières d'interpellations. Il faut de la place en cellule et en salle d'attente." },
+    touristes: { name: 'Touristes', desc: "Trois fois plus de public, qui perd tout : lunettes, enfants, voiture de location. Les plaintes vont plus vite mais rapportent moitié moins. Il faut un accueil costaud." },
+    neige: { name: 'Tempêtes de neige', desc: "Régulièrement, une tempête bloque les patrouilles : seules les motoneiges continuent d'interpeller. Les chaînes à neige raccourcissent les tempêtes." },
+    interpretes: { name: 'Passagers étrangers', desc: "Une partie des GAV ne parle pas français : leur audition attend un interprète libre. De temps en temps, un colis suspect mobilise une partie de la PTS." },
+    vip: { name: 'GAV de stars', desc: "Des stars en garde à vue : elles rapportent dix fois plus, mais si elles sortent non signalisées ou restent trop longtemps, c'est le scandale. Un scandale divise la prime par deux, sauf si un chargé de com' l'étouffe." },
+    reunion: { name: 'Réunionite', desc: "Toutes les minutes, une réunion bloque une partie des enquêteurs. Et chaque semaine, l'IGPN inspecte un critère tiré au sort." },
   };
   const SITES = [
-    { name: 'Saint-Parpaing-les-Choux', biome: 'campagne', kind: 'Campagne', problems: [], style: 'stone', star3: { id: 'sat', label: 'Usagers bien reçus ≥ 90 %' },
+    { name: 'Saint-Parpaing-les-Choux', biome: 'campagne', kind: 'Campagne', problems: [], style: 'stone', star3: { id: 'sat', min: 0.9, label: 'Usagers bien reçus ≥ 90 %' },
       pitch: 'Un village, trois vaches et un tracteur. Les plaintes parlent de poules volées et de clôtures arrachées.' },
     { name: 'Parpaing-Ville', biome: 'ville', kind: 'Ville', problems: ['vomi'], style: 'classic', star3: { id: 'clean', label: 'Propreté des couloirs ≥ 90 %' },
       pitch: 'Les bars ferment à 2 h, les GAV arrivent à 2 h 05. Et certaines vomissent dans les couloirs.' },
@@ -81,14 +108,40 @@ window.PD = (function () {
       pitch: 'Des gardés à vue qui sentent si fort des pieds que la PTS tombe dans les pommes. Masques à gaz obligatoires.' },
     { name: 'Parpaing-la-Défense', biome: 'megapole', kind: 'Mégapole', problems: ['vomi', 'pieds', 'delai'], style: 'glass', star3: { id: 'levee', label: 'Aucune GAV levée' },
       pitch: "Des avocats d'affaires partout. Passé le délai légal, la GAV est levée et le dossier part à la poubelle." },
-    { name: 'Parpaing-Nord', biome: 'cite', kind: 'Mégapole', problems: ['vomi', 'pieds', 'delai', 'manif'], style: 'bunker', star3: { id: 'lost', label: 'Aucun relâché faute de place' },
+    { name: 'Parpaing-Nord', biome: 'cite', kind: 'Banlieue', problems: ['pieds', 'delai', 'manif'], style: 'bunker', star3: { id: 'lost', label: 'Aucun relâché faute de place' },
       pitch: 'Une manif par jour, minimum. Les interpellations arrivent par cars entiers.' },
+    { name: 'Parpaing-Plage', biome: 'plage', kind: 'Bord de mer', problems: ['touristes', 'pieds', 'vomi'], style: 'beach', star3: { id: 'sat', min: 0.85, label: 'Usagers bien reçus ≥ 85 %' },
+      pitch: 'Tongs, sangria et coups de soleil. Les touristes perdent tout, les mouettes volent le reste.' },
+    { name: 'Parpaing-les-Neiges', biome: 'neige', kind: 'Montagne', problems: ['neige', 'vomi', 'touristes'], style: 'chalet', star3: { id: 'clean', label: 'Propreté des couloirs ≥ 90 %' },
+      pitch: "Tempêtes de neige, skieurs perdus et après-ski qui finit mal. Prévoyez des motoneiges et des serpillières." },
+    { name: 'Roissy-Parpaing', biome: 'aeroport', kind: 'Aéroport', problems: ['interpretes', 'delai', 'touristes'], style: 'airport', star3: { id: 'levee', label: 'Aucune GAV levée' },
+      pitch: 'Des passagers du monde entier, des valises oubliées partout et des correspondances à ne pas rater.' },
+    { name: 'Festival de Parpaing', biome: 'festival', kind: 'Festival', problems: ['vip', 'manif', 'vomi'], style: 'fest', star3: { id: 'scandal', label: 'Aucun scandale de star' },
+      pitch: "Paillettes, tapis rouge et stars en garde à vue. Les paparazzis campent devant l'entrée." },
+    { name: 'Place Beauvau-Parpaing', biome: 'ministere', kind: 'Ministère', problems: ['reunion', 'delai', 'vip'], style: 'palace', star3: { id: 'igpn', label: "Inspection de l'IGPN réussie" },
+      pitch: "Le sommet de la carrière : des réunions toute la journée et l'IGPN dans le bureau d'à côté." },
   ];
+  // Au-delà : des secteurs sans fin, 3 ou 4 problèmes tirés au sort (toujours les mêmes pour un secteur donné)
+  const ALLP = Object.keys(PROBLEMS);
+  const BIOMES = ['ville', 'metropole', 'megapole', 'cite', 'plage', 'neige', 'aeroport', 'festival', 'ministere'];
+  const STYLE_OF = { ville: 'classic', metropole: 'modern', megapole: 'glass', cite: 'bunker', plage: 'beach', neige: 'chalet', aeroport: 'airport', festival: 'fest', ministere: 'palace' };
+  const STAR3_OF = {
+    vomi: { id: 'clean', label: 'Propreté des couloirs ≥ 90 %' }, pieds: { id: 'faint', label: 'Aucun malaise à la PTS' },
+    delai: { id: 'levee', label: 'Aucune GAV levée' }, manif: { id: 'lost', label: 'Aucun relâché faute de place' },
+    touristes: { id: 'sat', min: 0.85, label: 'Usagers bien reçus ≥ 85 %' }, neige: { id: 'lost', label: 'Aucun relâché faute de place' },
+    interpretes: { id: 'levee', label: 'Aucune GAV levée' }, vip: { id: 'scandal', label: 'Aucun scandale de star' },
+    reunion: { id: 'igpn', label: "Inspection de l'IGPN réussie" },
+  };
   function site(i) {
     if (i < SITES.length) return SITES[i];
     const k = i - SITES.length + 1;
-    return { name: `Secteur Parpaing ${k + 1}`, biome: k % 2 ? 'cite' : 'megapole', kind: 'Mégapole', problems: ['vomi', 'pieds', 'delai', 'manif'], style: k % 2 ? 'bunker' : 'glass', hard: k,
-      star3: { id: 'levee', label: 'Aucune GAV levée' }, pitch: 'Tous les problèmes à la fois, en plus gros. Le préfet compte sur vous.' };
+    let s = (i * 2654435761) >>> 0;
+    const r = () => (s = (Math.imul(s, 1103515245) + 12345) >>> 0) / 4294967296;
+    const pool = ALLP.slice(), probs = [];
+    while (probs.length < 3 + (k % 2)) probs.push(pool.splice(Math.floor(r() * pool.length), 1)[0]);
+    const biome = BIOMES[Math.floor(r() * BIOMES.length)];
+    return { name: `Secteur Parpaing ${k + 1}`, biome, kind: 'Secteur spécial', problems: probs, style: STYLE_OF[biome], hard: k, star3: STAR3_OF[probs[0]],
+      pitch: 'Plusieurs problèmes tirés au sort, en plus gros. Le préfet compte sur vous.' };
   }
 
   const UNITS = [
@@ -100,25 +153,32 @@ window.PD = (function () {
     { id: 'pla', name: 'Agent des plaintes', base: 35, g: 1.16, start: 1, needs: 'plaintes', desc: 'Traite les plaintes. Une plainte sur deux donne une piste aux patrouilles.' },
     { id: 'clean', name: "Agent d'entretien", base: 30, g: 1.15, start: 1, prob: 'vomi', desc: "Serpillière, seau et nerfs d'acier. Nettoie le vomi des couloirs." },
     { id: 'masks', name: 'Masque à gaz', base: 20, g: 1.13, start: 0, prob: 'pieds', desc: 'Un masque équipe un agent PTS. Sans masque, les GAV qui puent des pieds ralentissent la PTS et provoquent des malaises.' },
+    { id: 'snow', name: 'Motoneige', base: 60, g: 1.2, start: 0, prob: 'neige', desc: 'Garde une patrouille en service pendant les tempêtes de neige.' },
+    { id: 'interp', name: 'Interprète', base: 50, g: 1.17, start: 0, prob: 'interpretes', desc: "Accompagne l'audition d'un passager étranger. Sans interprète libre, sa GAV attend." },
+    { id: 'press', name: "Chargé de com'", base: 120, g: 1.25, start: 0, prob: 'vip', desc: 'Étouffe un scandale de star par semaine (paparazzis, réseaux sociaux…).' },
   ];
 
+  // per = effet par niveau : le jeu ET les infobulles lisent cette même valeur
   const UPGRADES = [
-    { id: 'stamp', name: 'Tampon en titane', base: 50, g: 4, desc: 'Coup de tampon ×2' },
-    { id: 'coffee', name: 'Machine à café', base: 100, g: 3, desc: '+25 % vitesse des enquêteurs' },
-    { id: 'gyro', name: 'Gyrophares turbo', base: 120, g: 3, desc: '+25 % vitesse des patrouilles' },
-    { id: 'bio', name: 'Borne biométrique', base: 150, g: 3, desc: '+30 % vitesse PTS' },
-    { id: 'tickets', name: 'Distributeur de tickets', base: 180, g: 3, needs: 'accueil', desc: "+30 % vitesse de l'accueil" },
-    { id: 'hall', name: 'Chaises en plastique', base: 200, g: 3.5, desc: "+4 places d'attente (suspects et usagers)" },
-    { id: 'lrp', name: 'Logiciel qui plante moins', base: 250, g: 3.2, desc: '+30 % recette par dossier' },
-    { id: 'form', name: 'Cerfa simplifié', base: 300, g: 3, needs: 'plaintes', desc: '+30 % vitesse des plaintes' },
-    { id: 'com', name: 'Affiche « Venez porter plainte »', base: 350, g: 3.3, needs: 'accueil', desc: '+30 % de public à l\'accueil' },
-    { id: 'beds', name: 'Bancs plus larges', base: 400, g: 5, desc: '+1 place par cellule' },
-    { id: 'crois', name: 'Croissants du vendredi', base: 600, g: 3.5, desc: '+15 % sur la prime hebdo' },
-    { id: 'mop', name: 'Serpillière turbo', base: 150, g: 3, prob: 'vomi', desc: '+30 % vitesse de ménage' },
-    { id: 'deo', name: 'Déodorant industriel', base: 300, g: 3.5, prob: 'pieds', desc: '−20 % de GAV qui puent des pieds' },
-    { id: 'parquet', name: 'Prolongation du parquet', base: 400, g: 3.4, prob: 'delai', desc: '+25 % de délai légal de GAV' },
-    { id: 'avocat', name: 'Café offert aux avocats', base: 350, g: 3.2, prob: 'delai', desc: 'Les avocats font moins traîner les auditions' },
-    { id: 'xxl', name: "Salle d'attente XXL", base: 500, g: 3.5, prob: 'manif', desc: "+10 places d'attente pour les suspects" },
+    { id: 'stamp', name: 'Tampon en titane', base: 80, g: 6, per: 0.5, desc: 'Coup de tampon : +50 % de gain par niveau' },
+    { id: 'coffee', name: 'Machine à café', base: 300, g: 3.2, per: 0.2, desc: "+20 % de vitesse d'audition par niveau" },
+    { id: 'gyro', name: 'Gyrophares turbo', base: 300, g: 3.2, per: 0.2, desc: '+20 % de vitesse des patrouilles par niveau' },
+    { id: 'bio', name: 'Borne biométrique', base: 450, g: 3.2, per: 0.25, desc: '+25 % de vitesse de signalisation par niveau' },
+    { id: 'tickets', name: 'Distributeur de tickets', base: 300, g: 3, per: 0.25, needs: 'accueil', desc: "+25 % de vitesse de l'accueil par niveau" },
+    { id: 'hall', name: 'Chaises en plastique', base: 200, g: 3.5, per: 4, desc: "+4 places d'attente par niveau (suspects et usagers)" },
+    { id: 'lrp', name: 'Logiciel qui plante moins', base: 750, g: 3.4, per: 0.25, desc: '+25 % de recette par dossier, par niveau' },
+    { id: 'form', name: 'Cerfa simplifié', base: 500, g: 3, per: 0.25, needs: 'plaintes', desc: '+25 % de vitesse des plaintes par niveau' },
+    { id: 'com', name: 'Affiche « Venez porter plainte »', base: 350, g: 3.3, per: 0.3, needs: 'accueil', desc: "+30 % de public à l'accueil par niveau" },
+    { id: 'beds', name: 'Bancs plus larges', base: 1500, g: 6, per: 1, scale: 'cells', desc: '+1 place dans chaque cellule par niveau' },
+    { id: 'crois', name: 'Croissants du vendredi', base: 600, g: 3.5, per: 0.15, desc: '+15 % sur la prime hebdo par niveau' },
+    { id: 'mop', name: 'Serpillière turbo', base: 300, g: 3, per: 0.3, prob: 'vomi', desc: '+30 % de vitesse de ménage par niveau' },
+    { id: 'deo', name: 'Déodorant industriel', base: 300, g: 3.5, per: 0.2, prob: 'pieds', desc: '−20 % de GAV qui puent des pieds par niveau' },
+    { id: 'parquet', name: 'Prolongation du parquet', base: 400, g: 3.4, per: 0.25, prob: 'delai', desc: '+25 % de délai légal de GAV par niveau' },
+    { id: 'avocat', name: 'Café offert aux avocats', base: 350, g: 3.2, per: 0.1, prob: 'delai', desc: 'Les avocats ralentissent moins les auditions, par niveau' },
+    { id: 'xxl', name: "Salle d'attente XXL", base: 500, g: 3.5, per: 10, prob: 'manif', desc: "+10 places d'attente pour les suspects par niveau" },
+    { id: 'chains', name: 'Chaînes à neige', base: 400, g: 3.3, per: 0.2, prob: 'neige', desc: '−20 % de durée des tempêtes par niveau' },
+    { id: 'visio', name: 'Visioconférence', base: 600, g: 3.4, per: 0.25, prob: 'reunion', desc: "−25 % d'enquêteurs bloqués en réunion par niveau" },
+    { id: 'mailr', name: 'Réunion qui aurait pu être un mail', base: 450, g: 3.2, per: 0.25, prob: 'reunion', desc: '−25 % de durée des réunions par niveau' },
   ];
 
   const BUILDINGS = [
@@ -168,15 +228,31 @@ window.PD = (function () {
     metropole: ["La PTS demande si les masques à gaz couvrent aussi les chaussettes.", "Un gardé à vue a retiré ses chaussures. Évacuation du 1er étage.", "Record battu : odeur détectée depuis le parking."],
     megapole: ["Un avocat a demandé la nullité parce que le café était tiède.", "Le parquet rappelle que 24 h, c'est 24 h.", "Trois avocats pour un vol de trottinette."],
     cite: ["Manifestation devant le commissariat. Les pancartes sont bien écrites.", "Le car de CRS est coincé dans un rond-point.", "Une manif contre les manifs est annoncée pour demain."],
+    plage: ["Un touriste a perdu son enfant. Puis sa femme. Puis sa voiture de location.", "Une mouette a volé un dossier. Elle est en fuite.", "Plainte contre le soleil pour coups et blessures."],
+    neige: ["Tempête annoncée : les patrouilles sortent les moufles.", "Un skieur interpellé pour excès de vitesse sur piste verte.", "L'après-ski a encore mal fini. Serpillières en renfort."],
+    aeroport: ["Bagage abandonné au terminal 2 : c'était un sandwich.", "Un passager demande un interprète en klingon.", "Correspondance ratée : le suspect porte plainte contre lui-même."],
+    festival: ["Une star exige des cellules avec vue sur la mer.", "Les paparazzis ont pris en photo le distributeur de café.", "Tapis rouge déroulé jusqu'aux cellules. Le préfet n'a pas été prévenu."],
+    ministere: ["Réunion pour préparer la réunion de demain.", "L'IGPN demande où sont rangés les trombones.", "Note de service n°4 812 : merci de lire les notes de service."],
   };
 
+  // Ce qu'apporte le croissant doré. w = poids du tirage (environ 75 % de bonus, 25 % de malus).
   const GOLDEN = [
-    { id: 'prefet', label: 'Visite du préfet : recettes ×5', dur: 30, msg: 'Le préfet passe ! Tout le monde fait semblant de bosser. Recettes ×5 pendant 30 s.' },
-    { id: 'bac', label: 'Renfort BAC : patrouilles ×4', dur: 30, msg: 'La BAC arrive en renfort. Patrouilles ×4 pendant 30 s.' },
-    { id: 'maxime', label: 'Maxime : PTS +50 %', dur: 30, msg: "Maxime a fait ses dossiers parquet ! La PTS n'a qu'à bien se tenir : efficacité de la PTS augmentée de 50 % pendant 30 secondes." },
-    { id: 'laurine', label: 'Laurine : −5 % partout', dur: 20, malus: true, msg: "Ah mince, pas de chance… même si tomber sur Laurine en est une ! Elle sabote vos locaux : −5 % d'efficacité pendant 20 secondes dans tous les services." },
-    { id: 'turbo', label: 'Heures sup : traitement ×3', dur: 30, msg: 'Heures sup payées (si si). Enquête, PTS et plaintes ×3 pendant 30 s.' },
-    { id: 'cash', label: '', dur: 0, msg: "Saisie d'avoirs criminels ! Le butin part dans la caisse." },
+    { id: 'prefet', w: 3, label: 'Visite du préfet : recettes ×3', dur: 20, msg: 'Le préfet passe ! Tout le monde fait semblant de bosser. Recettes ×3 pendant 20 secondes.' },
+    { id: 'major', w: 3, label: 'Aura du major : recettes ×3', dur: 10, msg: "L'aura du major irradie le commissariat : rentabilité de tout le commissariat +200 % pendant 10 secondes !" },
+    { id: 'bac', w: 3, label: 'Renfort BAC : patrouilles ×3', dur: 25, msg: 'La BAC arrive en renfort. Patrouilles ×3 pendant 25 secondes.' },
+    { id: 'maxime', w: 3, label: 'Maxime : PTS +50 %', dur: 30, msg: "Maxime a fait ses dossiers parquet ! La PTS n'a qu'à bien se tenir : efficacité de la PTS augmentée de 50 % pendant 30 secondes." },
+    { id: 'lrpmail', w: 3, label: 'Mail LRP : PTS +50 %', dur: 20, msg: "Le mail LRP du jour est arrivé ! La PTS s'active et augmente son efficacité de 50 % pendant 20 secondes !" },
+    { id: 'turbo', w: 2, label: 'Heures sup : tout ×2', dur: 20, msg: 'Heures sup payées (si si) : enquête, PTS, accueil, plaintes et ménage ×2 pendant 20 secondes.' },
+    { id: 'pizza', w: 3, label: 'Pizzas : tout +25 %', dur: 30, msg: "Livraison de pizzas pour toute l'équipe ! Tous les services +25 % pendant 30 secondes." },
+    { id: 'cash', w: 3, msg: "Saisie d'avoirs criminels ! Le butin part dans la caisse." },
+    { id: 'stagiaire', w: 2, needs: 'plaintes', msg: "Le stagiaire a rangé les archives : toutes les plaintes en attente sont traitées d'un coup !" },
+    { id: 'bbq', w: 2, needs: 'accueil', msg: "Barbecue du commissariat ! La file de l'accueil se vide, tout le monde repart ravi (et repu)." },
+    { id: 'igpn', w: 2, msg: "Inspection surprise de l'IGPN !" },
+    { id: 'amelie', w: 2, msg: 'La folle du bus Amélie fait des bruits étranges : les GAV sortent en masse du commissariat ! Les cellules repartent de zéro.' },
+    { id: 'laurine', w: 3, malus: true, label: 'Laurine : −5 % partout', dur: 20, msg: "Ah mince, pas de chance… même si tomber sur Laurine en est une ! Elle sabote vos locaux : −5 % d'efficacité pendant 20 secondes dans tous les services." },
+    { id: 'corbeaux', w: 3, malus: true, label: 'Corbeaux : PTS −10 %', dur: 10, msg: 'Les corbeaux réclament à manger : productivité de la PTS −10 % pendant 10 secondes.' },
+    { id: 'photocop', w: 1, malus: true, needs: 'plaintes', label: 'Photocopieuse en panne : plaintes −50 %', dur: 15, msg: 'Panne de la photocopieuse ! Le bureau des plaintes tourne à moitié pendant 15 secondes.' },
+    { id: 'pigeon', w: 1, malus: true, label: 'Pigeon : tampon volé', dur: 15, msg: 'Un pigeon a volé le tampon ! Impossible de tamponner pendant 15 secondes.' },
   ];
 
   const PRIME_TALK = {

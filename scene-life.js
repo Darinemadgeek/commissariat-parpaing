@@ -56,13 +56,15 @@
       R.roofSign.visible = t >= 1; R.antenna.visible = t >= 2; R.pad.visible = t >= 3; R.annex.visible = t >= 4; R.statue.visible = t >= 5; R.gold.visible = t >= 6;
       tags.hq.pos.y = n * 3 + (t >= 3 ? 3.4 : 2.2); anchors.hq.y = n * 3;
     }
-    if (changed('cells', v.cells) | changed('occ', v.occ) | changed('cap', v.cellCap) | changed('smelly', v.smelly)) {
-      let rem = v.occ, stink = v.smelly;
+    if (changed('cells', v.cells) | changed('occ', v.occ) | changed('cap', v.cellCap) | changed('smelly', v.smelly) | changed('vips', v.vips)) {
+      let rem = v.occ, stink = v.smelly, vips = v.vips || 0;
+      R.cells.forEach(c => { c.userData.vip.visible = false; });
       R.cells.forEach((c, i) => {
         c.visible = i < v.cells;
         const n = c.visible ? Math.min(v.cellCap, rem) : 0; rem -= n;
         c.userData.figs.forEach((f, j) => { f.visible = j < Math.min(n, 4); });
         c.userData.stink.visible = n > 0 && stink > 0; if (n > 0 && stink > 0) stink -= n;
+        if (n > 0 && vips > 0) { c.userData.vip.visible = true; c.userData.figs[0].visible = false; vips--; }
       });
       R.ext.visible = v.cells > 12;
       const nx = R.cells[v.cells];
@@ -95,6 +97,14 @@
     if (changed('cln', probs.vomi ? v.clean : 0)) showN(R.cleaners, Math.min(L.cln, R.cleaners.length));
     if (changed('law', probs.delai ? v.lawyers : 0)) showN(R.lawyers, Math.min(L.law, R.lawyers.length));
     if (changed('manif', v.manif)) { manifOn = v.manif; showN(R.demo, v.manif ? R.demo.length : 0); }
+    if (changed('ip', probs.interpretes ? v.interpBusy : 0)) showN(R.interps, L.ip);
+    if (changed('meet', probs.reunion ? v.meeting : 0) | changed('inv2', v.inv)) {
+      showN(R.meet, Math.min(L.meet, R.meet.length));
+      R.desks.forEach((d, i) => { d.userData.f.visible = !(i < L.meet); }); // ceux qui sont en réunion quittent leur bureau
+    }
+    if (changed('papa', probs.vip ? Math.min(2 + (v.vips || 0) * 2, R.papa.length) : 0)) showN(R.papa, L.papa);
+    R.colis.visible = !!v.colis;
+    S.world.storm = !!v.storm;
     tags.clean.show(!!probs.vomi);
     R.coffee.visible = v.up.coffee > 0; R.tickets.visible = v.up.tickets > 0; R.poster.visible = v.up.com > 0;
     busy = { inv: v.invBusy, pts: v.ptsBusy, acc: v.accBusy, pla: v.plaBusy };
@@ -133,6 +143,8 @@
     });
     R.cells.forEach((c, i) => { const s = c.userData.stink; if (s.visible) s.children.forEach((b, k) => { b.position.y = ((t * 0.5 + k * 0.33 + i * 0.1) % 1) * 1.2; b.material.opacity = 0.5 * (1 - b.position.y / 1.2); }); });
     if (manifOn) R.demo.forEach((f, i) => { f.position.y = Math.abs(Math.sin(t * 5 + i)) * 0.3; });
+    R.papa.forEach((f, i) => { if (f.visible) f.userData.flash.visible = Math.sin(t * 9 + i * 2.3) > 0.93; });
+    if (R.colis.visible) R.colisLamp.visible = Math.floor(t * 4) % 2 === 0;
     for (let i = walkers.length - 1; i >= 0; i--) {
       const w = walkers[i], a = w.pts[w.i], b = w.pts[w.i + 1];
       if (!b) { scene.remove(w.f); walkers.splice(i, 1); continue; }

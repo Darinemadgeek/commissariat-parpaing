@@ -8,6 +8,11 @@
     modern: { wall: '#dfe4ea', trim: '#1f7a8c', acc: '#3d7bff', lot: '#c9ced6', facade: 'beton' },
     glass: { wall: '#c9d6e6', trim: '#22304d', acc: '#5aa9ff', lot: '#9aa3b0', facade: 'verre' },
     bunker: { wall: '#b8bcc2', trim: '#2b2f36', acc: '#ffc93c', lot: '#a9aeb5', facade: 'beton' },
+    beach: { wall: '#fdf6e9', trim: '#2a9d8f', acc: '#ff9f1c', lot: '#f2e3c4', facade: 'pastelB' },
+    chalet: { wall: '#e2c39c', trim: '#6b4a3a', acc: '#e63946', lot: '#e9eef5', facade: 'ferme' },
+    airport: { wall: '#e8edf3', trim: '#3a4152', acc: '#3d7bff', lot: '#b8bec8', facade: 'verre' },
+    fest: { wall: '#fff3e6', trim: '#7b2cbf', acc: '#ff4b5c', lot: '#d9cbb8', facade: 'pastelC' },
+    palace: { wall: '#efe3c8', trim: '#7a5a2a', acc: '#c9a227', lot: '#d6cfbf', facade: 'haussmann' },
   };
   const gyR = mat('#ff4b5c', { emissive: '#ff2030', emissiveIntensity: 1 });
   const gyB = mat('#3d7bff', { emissive: '#2050ff', emissiveIntensity: 1 });
@@ -38,7 +43,8 @@
     const stink = new THREE.Group(); g.add(stink); stink.position.y = Y + 1.4;
     for (let k = 0; k < 3; k++) { const s = new THREE.Mesh(S.geo('stink', () => new THREE.IcosahedronGeometry(0.35, 0)), new THREE.MeshBasicMaterial({ color: '#9be35a', transparent: true, opacity: 0.45, depthWrite: false })); s.position.set(-0.5 + k * 0.5, k * 0.2, 0); stink.add(s); }
     stink.visible = false;
-    g.userData = { figs, stink }; g.visible = false;
+    const vip = seat(g, 'vip', 0.3, 0.45, Math.PI * 0.9); vip.visible = false; // une star en lunettes noires
+    g.userData = { figs, stink, vip }; g.visible = false;
     return g;
   }
 
@@ -229,6 +235,17 @@
     for (let i = 0; i < 6; i++) { const f = seat(b, 'clean', 0, i % 3 === 2 ? -6.6 : 0, 0); f.userData.lane = i % 3 === 2 ? [5, 19] : [-18, 18]; f.userData.ph = i * 1.7; f.visible = false; R.cleaners.push(f); }
     R.lawyers = [];
     for (let i = 0; i < 6; i++) { const f = seat(b, 'avocat', 5 + i * 2.4, -6.3 + (i % 2) * 0.5, i % 2 ? Math.PI : 0); f.visible = false; R.lawyers.push(f); }
+    // interprètes à côté des enquêteurs, réunion dans le bureau du commissaire, paparazzis, colis suspect
+    R.interps = R.desks.slice(0, 6).map(d => { const f = seat(d, 'interp', 0.95, 0.55, Math.PI); f.visible = false; return f; });
+    R.meet = [];
+    for (let i = 0; i < 8; i++) { const f = seat(b, 'inv', -1.2 + (i % 4) * 1.45, i < 4 ? -2.9 : -1.8, Math.PI); f.visible = false; R.meet.push(f); }
+    R.papa = [];
+    for (let i = 0; i < 8; i++) { const f = figure('papa'); f.position.set(-8 + i * 2.2 + (Math.random() - 0.5), 0.1, 14.6 + (i % 2) * 1.4); f.rotation.y = Math.PI + (Math.random() - 0.5) * 0.6; f.visible = false; b.add(f); R.papa.push(f); }
+    R.colis = grp(b, 6.5, 13.2);
+    box(R.colis, 1, 0.7, 0.7, '#8a5a35', 0, 0.1, 0); box(R.colis, 1.02, 0.12, 0.72, '#e9d3a2', 0, 0.45, 0);
+    R.colisLamp = box(R.colis, 0.25, 0.25, 0.25, gyR, 0, 0.8, 0);
+    for (let k = 0; k < 4; k++) cyl(R.colis, 0.03, 0.03, 0.9, 4, '#ffc93c', (k % 2 ? 1 : -1) * 1.2, 0, (k < 2 ? 1 : -1) * 1.2);
+    R.colis.visible = false;
     R.demo = [];
     for (let i = 0; i < 36; i++) { const f = figure('demo'); f.position.set(-22 + (i % 12) * 4 + Math.random() * 2, 0, 19 + Math.floor(i / 12) * 2.4 + Math.random()); f.rotation.y = Math.PI + (Math.random() - 0.5); f.visible = false; b.add(f); R.demo.push(f); }
 

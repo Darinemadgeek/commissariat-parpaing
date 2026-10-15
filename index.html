@@ -94,7 +94,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .fatal{position:absolute;inset:0;z-index:15;display:grid;place-content:center;gap:12px;padding:24px;text-align:center;background:color-mix(in srgb,var(--night) 92%,transparent);font-weight:700;line-height:1.4}
 .fatal p{margin:0;max-width:340px}
 .fatal button,.install button{font-family:var(--f-display);font-size:15px;background:var(--gyro-blue);color:#fff;border:3px solid var(--line);border-radius:12px;padding:10px 16px;cursor:pointer;box-shadow:0 4px 0 var(--line)}
-.errbar{position:fixed;left:8px;right:8px;bottom:8px;z-index:50;display:flex;gap:10px;align-items:flex-start;background:#b3122a;color:#fff;font-size:12px;line-height:1.4;padding:8px 10px;border-radius:10px;border:2px solid var(--line)}
+.errbar{position:fixed;left:8px;right:8px;bottom:8px;z-index:70;display:flex;gap:10px;align-items:flex-start;background:#b3122a;color:#fff;font-size:12px;line-height:1.4;padding:8px 10px;border-radius:10px;border:2px solid var(--line)}
 .errbar button{margin-left:auto;flex:none;background:none;border:0;color:#fff;font-size:18px;line-height:1;cursor:pointer}
 .install{background:var(--navy);border:2px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;font-size:12.5px;color:var(--ink-dim);line-height:1.4}
 .install b{color:var(--ink);font-size:14px}
@@ -114,8 +114,36 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 [data-tip]:focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:6px}
 .mapbtn[data-tip]{cursor:pointer}
 .tip{position:fixed;z-index:40;max-width:min(310px,calc(100vw - 32px));background:var(--paper);color:var(--paper-ink);border:2px solid var(--line);border-radius:10px;padding:10px 12px;font-size:12.5px;line-height:1.45;box-shadow:0 8px 24px rgba(0,0,0,.35);pointer-events:none}
-.tip strong{display:block;font-family:var(--f-display);font-weight:400;font-size:14px;margin-bottom:4px}
+.tip strong{display:block;font-family:var(--f-display);font-weight:400;font-size:14px;margin-bottom:4px;line-height:1.25}
+.tip p{margin:0 0 6px}
+.tip dl{display:grid;grid-template-columns:1fr auto;gap:3px 12px;margin:6px 0;padding:6px 0;border-top:1px dashed var(--paper-ink);border-bottom:1px dashed var(--paper-ink)}
+.tip dt{font-weight:700} .tip dd{margin:0;text-align:right;font-variant-numeric:tabular-nums}
+.tip dd b{color:#14803f}
 .tip .calc{display:block;margin-top:6px;padding:5px 8px;background:#fff;border:1px dashed var(--paper-ink);border-radius:6px;font-family:var(--f-type);font-size:12px}
+.tip .acts{margin:8px 0 0}
+.tip .acts b{color:#1b2a5c}
+.tip .hint{margin:6px 0 0;font-size:12px;color:#5a5560}
+.item{-webkit-touch-callout:none;user-select:none}
+
+/* écran d'accueil */
+.title{position:fixed;inset:0;z-index:60;display:grid;place-items:center;background:#8fd0ff;overflow:hidden;transition:opacity .45s ease}
+.title.out{opacity:0;pointer-events:none}
+.title-img,.title-bg{position:absolute;inset:0;width:100%;height:100%;max-width:none;object-fit:cover;object-position:50% 30%}
+.title-bg{display:none;filter:blur(16px) brightness(.85);transform:scale(1.15)}
+/* écran en portrait (téléphone) : l'image entière en haut, sur un fond flou de la même image */
+@media (max-aspect-ratio:1/1){
+  .title-bg{display:block}
+  .title-img{object-fit:contain;object-position:50% 18%}
+  .title-ui{margin-top:34vh}
+}
+.title-ui{position:relative;display:flex;flex-direction:column;align-items:center;gap:12px;margin-top:22vh;padding:0 16px;text-align:center}
+.play{font-family:var(--f-display);font-size:clamp(30px,6vw,52px);letter-spacing:.04em;color:#fff;background:linear-gradient(#ffd23f,#f59e00);text-shadow:0 3px 0 #8a5a00;border:5px solid #16224a;border-radius:22px;padding:12px 56px 14px;cursor:pointer;box-shadow:0 8px 0 #16224a,0 16px 34px rgba(0,0,0,.35);animation:playPulse 1.6s ease-in-out infinite}
+.play:hover{filter:brightness(1.08)}
+.play:active{transform:translateY(5px);box-shadow:0 3px 0 #16224a,0 8px 20px rgba(0,0,0,.35);animation:none}
+.play:focus-visible{outline:4px solid #fff;outline-offset:4px}
+@keyframes playPulse{50%{transform:scale(1.06)}}
+.title-save{margin:0;font-weight:800;font-size:13px;color:#16224a;background:rgba(255,255,255,.85);border:2px solid #16224a;border-radius:999px;padding:6px 14px}
+@media (prefers-reduced-motion:reduce){.play{animation:none}}
 
 /* carte des affectations */
 .mapov{position:fixed;inset:0;z-index:20;background:rgba(6,10,26,.72);display:grid;place-items:center;padding:16px}
@@ -163,8 +191,11 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .float{position:absolute;pointer-events:none;font-family:var(--f-display);font-size:16px;color:var(--gold);text-shadow:0 2px 0 var(--line),0 0 6px var(--line);animation:up 1.4s ease-out forwards;white-space:nowrap}
 .float.bad{color:var(--bad)} .float.blue{color:#9cc2ff}
 @keyframes up{from{transform:translate(-50%,0) scale(.8);opacity:1}to{transform:translate(-50%,-60px) scale(1.1);opacity:0}}
-.golden{position:absolute;width:64px;height:64px;padding:0;border:0;background:none;cursor:pointer;pointer-events:auto;filter:drop-shadow(0 0 10px var(--gold));animation:wob 1s ease-in-out infinite}
-@keyframes wob{50%{transform:rotate(14deg) scale(1.1)}}
+.golden{position:absolute;z-index:5;width:96px;height:68px;padding:0;border:0;background:none;cursor:pointer;pointer-events:auto;filter:drop-shadow(0 0 10px rgba(255,201,60,.9)) drop-shadow(0 0 2px #fff)}
+.golden svg{width:100%;height:100%;display:block}
+.golden .spark{position:absolute;width:10px;height:10px;background:#fff;clip-path:polygon(50% 0,62% 38%,100% 50%,62% 62%,50% 100%,38% 62%,0 50%,38% 38%);animation:spark 1.4s ease-in-out infinite}
+.golden .s1{top:-4px;left:14px} .golden .s2{top:8px;right:-2px;animation-delay:.45s} .golden .s3{bottom:6px;left:-2px;animation-delay:.9s}
+@keyframes spark{0%,100%{transform:scale(.2);opacity:0}50%{transform:scale(1.2);opacity:1}}
 
 /* PV de fin de semaine */
 .pv{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-1.2deg);width:min(420px,calc(100% - 32px));background:var(--paper);color:var(--paper-ink);font-family:var(--f-type);padding:20px 22px;border-radius:4px;box-shadow:0 18px 40px rgba(0,0,0,.45);pointer-events:auto;animation:drop .35s cubic-bezier(.2,1.6,.4,1)}
@@ -367,10 +398,20 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 <script src="data.js"></script>
 <script src="scene-core.js"></script>
 <div class="mapov" id="mapOv" hidden role="dialog" aria-label="Carte des affectations"></div>
+<div class="title" id="title">
+  <img class="title-bg" src="img/titre.webp" alt="" aria-hidden="true">
+  <img class="title-img" src="img/titre.webp" alt="Commissaire Parpaing : un commissariat en 3D, une voiture de police, un drapeau et un goéland">
+  <div class="title-ui">
+    <button class="play" id="playBtn" type="button">JOUER</button>
+    <p class="title-save" id="titleSave">Chargement…</p>
+  </div>
+</div>
 <script src="scene-world.js"></script>
+<script src="scene-world2.js"></script>
 <script src="scene-building.js"></script>
 <script src="scene-life.js"></script>
 <script src="game-core.js"></script>
+<script src="game-tips.js"></script>
 <script src="game-ui.js"></script>
 </body>
 </html>

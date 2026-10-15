@@ -106,8 +106,11 @@ window.S = (function () {
   // Petit bonhomme : suspect | inv | pts | cop | civ | acc | pla | clean | demo
   function figure(kind) {
     const g = new THREE.Group();
-    const bodyC = { suspect: '#ff7b1c', inv: '#a8743f', pts: '#f4f6fb', cop: '#22336e', acc: '#7fb0ff', pla: '#2c3f86', clean: '#3fae5a', avocat: '#1a1a1a' }[kind] || rnd(CIV);
+    const bodyC = { suspect: '#ff7b1c', inv: '#a8743f', pts: '#f4f6fb', cop: '#22336e', acc: '#7fb0ff', pla: '#2c3f86', clean: '#3fae5a', avocat: '#1a1a1a', interp: '#ffd23f', vip: '#ffc93c', papa: '#3a3a3a' }[kind] || rnd(CIV);
     if (kind === 'avocat') { box(g, 0.2, 0.24, 0.06, '#ffffff', 0, 0.46, 0.27); box(g, 0.42, 0.3, 0.1, '#5a3a22', 0.36, 0.12, 0); }
+    if (kind === 'interp') { box(g, 0.5, 0.06, 0.06, '#1d2433', 0, 1.14, 0); box(g, 0.08, 0.18, 0.12, '#1d2433', -0.24, 0.92, 0); box(g, 0.08, 0.18, 0.12, '#1d2433', 0.24, 0.92, 0); }
+    if (kind === 'vip') { box(g, 0.36, 0.08, 0.06, '#111111', 0, 0.96, 0.2); box(g, 0.3, 0.05, 0.05, '#fff2a8', 0, 0.62, 0.25); }
+    if (kind === 'papa') { box(g, 0.3, 0.22, 0.2, '#111522', 0, 0.72, 0.3); const fl = box(g, 0.14, 0.08, 0.08, mat('#ffffff', { emissive: '#ffffff', emissiveIntensity: 2 }), 0, 0.88, 0.38); fl.visible = false; g.userData.flash = fl; }
     cyl(g, 0.24, 0.32, 0.72, 7, bodyC, 0, 0, 0);
     ball(g, 0.22, rnd(SKIN), 0, 0.92, 0, 1);
     if (kind === 'cop' || kind === 'acc') {
@@ -205,5 +208,5 @@ window.S = (function () {
   }
   requestAnimationFrame(loop);
 
-  return { THREE, scene, camera, controls, mat, geo, mesh, box, cyl, ball, flat, sign, figure, rnd, rr, addTag, project, pickables, setSky, onFrame: f => frames.push(f), stage };
+  return { THREE, scene, camera, controls, renderer, low: LOW, mat, geo, mesh, box, cyl, ball, flat, sign, figure, rnd, rr, addTag, project, pickables, setSky, onFrame: f => frames.push(f), stage };
 })();
