@@ -77,8 +77,16 @@ window.GM = (function () {
   const cleanPerMin = () => (60 * G.n.clean * up('mop')) / T.CLEAN_TIME;
   // capacité théorique d'une semaine : sert à garder l'objectif préfectoral atteignable
   function weekCapacity() {
-    const wk = (T.DAY_LEN * 7) / 60;
-    const gav = Math.min((60 * G.n.inv) / enqTime(false), patrolPerMin() * (G.built.plaintes ? 1.25 : 1));
+    const wk = (T.DAY_LEN * 7) / 60, k = hardK();
+    // auditions, moins ce que coûtent en moyenne les réunions et les avocats, plafonnées par les interprètes
+    let inv = (60 * G.n.inv) / enqTime(false);
+    if (has('reunion')) inv *= 1 - T.MEETING_SHARE * down('visio') * (T.MEETING_LEN * down('mailr')) / T.MEETING_EVERY;
+    if (has('delai')) inv /= 1 + Math.min(1, T.LAWYER * k) * (1 / lawK() - 1);
+    if (has('interpretes')) inv = Math.min(inv, (60 * G.n.interp) / enqTime(false) / Math.min(1, T.FOREIGN * k));
+    // interpellations, moins les tempêtes pour les patrouilles sans motoneige
+    let pat = patrolPerMin() * (G.built.plaintes ? 1.25 : 1);
+    if (has('neige')) pat *= 1 - (T.STORM_LEN * down('chains') / T.STORM_EVERY) * (1 - Math.min(1, G.n.snow / Math.max(1, G.n.patrols)));
+    const gav = Math.min(inv, pat);
     const pla = G.built.plaintes ? Math.min(plaPerMin(), accPerMin(), citPerMin()) : 0;
     return (gav + pla) * wk;
   }
@@ -94,9 +102,9 @@ window.GM = (function () {
     nolevee: { label: 'aucune GAV levée', ok: w => w.gav > 0 && w.levees === 0 },
     obj: { label: "objectif préfectoral atteint", ok: w => w.gav + w.pla >= G.objective },
   };
-  // l'IGPN n'inspecte que là où elle donne la 3e étoile ; jamais « aucun relâché » un jour de manif
+  // l'IGPN n'inspecte que là où elle donne la 3e étoile, et seulement des critères qui peuvent rater ici
   const igpnHere = () => here().star3.id === 'igpn';
-  function rollIgpn() { const ids = Object.keys(IGPN).filter(k => (k !== 'sat90' || G.built.accueil) && (k !== 'nolost' || !has('manif'))); G.igpn = ids[Math.floor(Math.random() * ids.length)]; }
+  function rollIgpn() { const ids = Object.keys(IGPN).filter(k => (k !== 'sat90' || G.built.accueil) && (k !== 'nolost' || has('manif')) && (k !== 'nolevee' || has('delai'))); G.igpn = ids[Math.floor(Math.random() * ids.length)]; }
   const igpnLabel = () => (IGPN[G.igpn] || IGPN.sig98).label;
   // Les 3 étoiles d'une semaine : objectif de dossiers, signalisation, critère du commissariat
   function weekStars(w) {
@@ -132,7 +140,7 @@ window.GM = (function () {
     sig100: { w: 3, name: 'Zéro oubli', reward: 2, desc: () => 'Finissez la semaine à 100 % de signalisation, avec au moins 10 GAV auditionnées.', prog: w => ({ done: w.gav >= 10 && w.sig === w.gav, txt: w.gav ? `${w.sig}/${w.gav} signalisées` : '0 GAV' }) },
     sat95: { w: 2, ok: () => G.built.accueil, name: 'Accueil cinq étoiles', reward: 2, desc: () => "Au moins 95 % d'usagers bien reçus, sur 10 usagers minimum.", prog: w => { const n = w.recus + w.partis; return { done: n >= 10 && w.recus / n >= 0.95, txt: n ? `${pc(w.recus / n)} (${w.recus}/${n})` : '0 usager' }; } },
     pla: { w: 2, ok: () => G.built.plaintes, name: 'Opération guichet', reward: 1, target: () => Math.max(6, Math.round(G.objective * 0.5)), desc: q => `Traitez au moins ${q.target} plaintes cette semaine.`, prog: (w, q) => ({ done: w.pla >= q.target, txt: `${w.pla}/${q.target} plaintes` }) },
-    nolost: { w: 2, ok: () => !has('manif'), name: 'Pas un de perdu', reward: 1, desc: () => 'Aucun suspect relâché faute de place, avec au moins 10 GAV auditionnées.', prog: w => ({ done: w.gav >= 10 && w.lost === 0, txt: `${w.lost} relâché${w.lost > 1 ? 's' : ''} · ${w.gav} GAV` }) },
+    nolost: { w: 2, ok: () => has('manif'), name: 'Pas un de perdu', reward: 2, desc: () => 'Aucun manifestant relâché faute de place, avec au moins 10 GAV auditionnées.', prog: w => ({ done: w.gav >= 10 && w.lost === 0, txt: `${w.lost} relâché${w.lost > 1 ? 's' : ''} · ${w.gav} GAV` }) },
     tampon: { w: 2, name: "Bras d'acier", reward: 1, target: () => 150, desc: q => `Donnez ${q.target} coups de tampon cette semaine.`, prog: (w, q) => ({ done: w.tampons >= q.target, txt: `${w.tampons}/${q.target} coups` }) },
     clean97: { w: 2, ok: () => has('vomi'), name: 'Couloirs nickel', reward: 2, desc: () => 'Propreté moyenne des couloirs ≥ 97 % sur la semaine.', prog: w => ({ done: cleanRate(w) >= 0.97, txt: pc(cleanRate(w)) }) },
     nofaint: { w: 2, ok: () => has('pieds') && here().star3.id !== 'faint', name: 'Nez bouchés', reward: 1, desc: () => 'Aucun malaise à la PTS de toute la semaine.', prog: w => ({ done: w.malaises === 0 && w.gav > 0, txt: `${w.malaises} malaise${w.malaises > 1 ? 's' : ''}` }) },
@@ -192,8 +200,13 @@ window.GM = (function () {
     // Patrouilles : plus vite avec des pistes, bloquées par la neige (sauf motoneiges)
     const patrolsOn = storm ? Math.min(G.n.patrols, G.n.snow) : G.n.patrols;
     const pRate = (patrolsOn / T.PATROL_TIME) * up('gyro') * (buffOn('bac') ? 3 : 1) * (G.pistes > 0 ? T.PISTE_BOOST : 1) * (manif ? T.MANIF_MULT : 1) * (buffOn('laurine') ? 0.95 : 1);
+    // Sans place en cellule ni en salle d'attente, une patrouille attend avant d'interpeller.
+    // Une manif, elle, ne prévient pas : ceux qui n'ont pas de place sont relâchés.
     G.acc.patrol += pRate * dt;
+    G._patrolWait = false;
     while (G.acc.patrol >= 1) {
+      const room = G.det.length < capacity() || G.hall < hallCap();
+      if (!room && !manif) { G.acc.patrol = 1; G._patrolWait = true; break; }
       G.acc.patrol -= 1;
       if (G.pistes > 0) G.pistes--;
       W.inter++;
@@ -203,12 +216,13 @@ window.GM = (function () {
     }
     while (G.hall > 0 && G.det.length < capacity()) { G.hall--; G.det.push(newDet()); }
 
-    // Enquêteurs : les GAV les plus anciennes d'abord ; un étranger attend un interprète libre
+    // Enquêteurs : les stars passent devant, puis les GAV les plus anciennes ; un étranger attend un interprète libre
     const eSp = 1 / enqTime(true), lk = lawK();
     let ib = 0, ip = 0;
     const invN = invAvail();
-    for (const d of G.det) {
-      d.t += dt;
+    const order = has('vip') ? G.det.filter(d => d.vip).concat(G.det.filter(d => !d.vip)) : G.det;
+    for (const d of G.det) d.t += dt;
+    for (const d of order) {
       if (d.e >= 1 || ib >= invN) continue; // audition finie : elle attend la PTS sans occuper d'enquêteur
       if (d.foreign) { if (ip >= G.n.interp) continue; ip++; }
       d.e += eSp * dt * (d.lawyer ? lk : 1); ib++;
@@ -231,8 +245,8 @@ window.GM = (function () {
       if (d.p === 0) fx.toPts++;
       d.p = Math.min(1, d.p + sp * dt); pb++;
     };
-    for (const d of G.det) if (d.p > 0 && d.p < 1 && pb < avail) work(d);
-    for (const d of G.det) if (d.p === 0 && pb < avail) work(d);
+    for (const d of order) if (d.p > 0 && d.p < 1 && pb < avail) work(d);
+    for (const d of order) if (d.p === 0 && pb < avail) work(d);
     G._ptsBusy = pb;
 
     const lim = gavLimit();

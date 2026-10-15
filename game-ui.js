@@ -226,7 +226,7 @@
   }
   function effLine(id) {
     const W = G.week;
-    if (id === 'patrols') return `${fmt(GM.patrolPerMin(), 1)} interpellations/min${G.pistes ? ' (+50 % avec pistes : ' + G.pistes + ')' : ''}${G.stormLeft > 0 && GM.has('neige') ? ' · tempête !' : ''}`;
+    if (id === 'patrols') return `${fmt(GM.patrolPerMin(), 1)} interpellations/min${G.pistes ? ' (+50 % avec pistes : ' + G.pistes + ')' : ''}${G.stormLeft > 0 && GM.has('neige') ? ' · tempête !' : ''}${G._patrolWait ? ' · à l\'arrêt : plus de place' : ''}`;
     if (id === 'snow') return `${Math.min(G.n.snow, G.n.patrols)} / ${G.n.patrols} patrouilles roulent pendant les tempêtes`;
     if (id === 'interp') { const w = G.det.filter(d => d.foreign).length; return `${G._interpBusy || 0} / ${G.n.interp} en audition · ${w} étranger${w > 1 ? 's' : ''} en GAV`; }
     if (id === 'press') return `${G.week.scandales} scandale${G.week.scandales > 1 ? 's' : ''} cette semaine · ${G.n.press} étouffable${G.n.press > 1 ? 's' : ''}`;
@@ -453,16 +453,12 @@
     const smellyNow = G.det.some(d => d.smelly);
     const foreignWaiting = GM.has('interpretes') && G.det.filter(d => d.foreign && d.e < 1).length > G.n.interp;
     const toAudit = G.det.filter(d => d.e < 1).length; // sans compter celles qui attendent seulement la PTS
-    if (GM.lost()) { msg = 'Cellules pleines : des suspects repartent libres ! Construisez des cellules.'; lvl = 'bad'; }
+    if (GM.lost()) { msg = 'Manif : plus de place, des manifestants repartent libres ! Il faut des cellules, des chaises et des enquêteurs en réserve.'; lvl = 'bad'; }
     else if (GM.has('neige') && G.stormLeft > 0 && G.n.snow < G.n.patrols) { msg = 'Tempête de neige : sans motoneiges, les patrouilles sont bloquées.'; lvl = 'warn'; }
     else if (foreignWaiting) { msg = 'Des passagers étrangers attendent un interprète pour leur audition.'; lvl = 'warn'; }
     else if (GM.has('vip') && GM.scandals(W) > 0) { msg = "Scandale de star ! La prime est divisée par deux : recrutez un chargé de com'."; lvl = 'bad'; }
     else if (GM.has('reunion') && G.meetLeft > 0) { msg = 'Réunion en cours : une partie des enquêteurs a quitté son bureau.'; lvl = 'warn'; }
     else if (G.manifLeft > 0) { msg = 'Manifestation en cours : il faut de la place en cellule.'; lvl = 'warn'; }
-    else if (GM.has('manif') && W.lost > 0 && GM.invPerMin() < GM.patrolPerMin() * T.MANIF_MULT) {
-      // une manif triple les interpellations : seuls des enquêteurs en réserve vident les cellules à temps
-      msg = `Prochaine manif dans ${Math.ceil(G.manifIn)} s : gardez des enquêteurs en réserve (${fmt(GM.invPerMin())} auditions/min pour ${fmt(GM.patrolPerMin() * T.MANIF_MULT)} interpellations/min pendant une manif).`; lvl = 'warn';
-    }
     else if (GM.has('pieds') && smellyNow && G.n.masks < G.n.pts) { msg = 'Ça sent les pieds : équipez la PTS de masques à gaz.'; lvl = 'bad'; }
     else if (GM.has('vomi') && GM.propre() < 0.8) { msg = 'Du vomi partout dans les couloirs : recrutez des agents d\'entretien.'; lvl = 'bad'; }
     else if (GM.has('delai') && W.levees > 0 && toAudit > G.n.inv) { msg = 'Des GAV dépassent le délai légal : il faut plus d\'enquêteurs.'; lvl = 'bad'; }
@@ -473,6 +469,11 @@
       else { msg = `Signalisation de la semaine à ${pct(r)} : la PTS suit le rythme maintenant, le taux va remonter.`; lvl = 'warn'; }
     }
     else if (G.built.accueil && s !== null && s < 0.8) { msg = "L'accueil déborde : des usagers repartent fâchés."; lvl = 'warn'; }
+    else if (GM.has('manif') && W.lost > 0 && GM.invPerMin() < GM.patrolPerMin() * T.MANIF_MULT) {
+      // une manif triple les interpellations : seuls des enquêteurs en réserve vident les cellules à temps
+      msg = `Prochaine manif dans ${Math.ceil(G.manifIn)} s : gardez des enquêteurs en réserve (${fmt(GM.invPerMin())} auditions/min pour ${fmt(GM.patrolPerMin() * T.MANIF_MULT)} interpellations/min pendant une manif).`; lvl = 'warn';
+    }
+    else if (G._patrolWait && !G.manifLeft) { msg = 'Cellules pleines : les patrouilles attendent une place. Recrutez des enquêteurs et des agents PTS, pas des patrouilles.'; lvl = 'warn'; }
     else if (toAudit > G.n.inv + 1) { msg = `${toAudit} GAV attendent leur audition pour ${G.n.inv} enquêteur${G.n.inv > 1 ? 's' : ''} : recrutez des enquêteurs.`; lvl = 'warn'; }
     else if (G.built.plaintes && G.plaQ > G.n.pla * 3) { msg = "Les plaintes s'empilent : recrutez des agents des plaintes."; lvl = 'warn'; }
     else if (!G.det.length && !G.hall) { msg = 'Cellules vides : il faut plus de patrouilles.'; lvl = 'warn'; }

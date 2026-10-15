@@ -137,12 +137,16 @@ window.PD = (function () {
   function site(i) {
     if (i < SITES.length) return SITES[i];
     const k = i - SITES.length + 1;
+    // mulberry32 : un tirage bien réparti (l'ancien générateur ramenait presque toujours la neige)
     let s = (i * 2654435761) >>> 0;
-    const r = () => (s = (Math.imul(s, 1103515245) + 12345) >>> 0) / 4294967296;
+    const r = () => { s = (s + 0x6D2B79F5) | 0; let t = Math.imul(s ^ (s >>> 15), 1 | s); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
     const pool = ALLP.slice(), probs = [];
     while (probs.length < 3 + (k % 2)) probs.push(pool.splice(Math.floor(r() * pool.length), 1)[0]);
     const biome = BIOMES[Math.floor(r() * BIOMES.length)];
-    return { name: `Secteur Parpaing ${k}`, biome, kind: 'Secteur spécial', problems: probs, style: STYLE_OF[biome], hard: k, star3: STAR3_OF[probs[0]],
+    // un critère qui ne peut pas rater ne compte pas : les levées viennent du délai légal, les relâchés des manifs
+    const NEEDS = { levee: 'delai', lost: 'manif' };
+    const star3 = STAR3_OF[probs.find(p => !NEEDS[STAR3_OF[p].id] || probs.includes(NEEDS[STAR3_OF[p].id]))];
+    return { name: `Secteur Parpaing ${k}`, biome, kind: 'Secteur spécial', problems: probs, style: STYLE_OF[biome], hard: k, star3,
       pitch: 'Plusieurs problèmes tirés au sort, en plus gros. Le préfet compte sur vous.' };
   }
 
