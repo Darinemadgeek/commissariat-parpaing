@@ -19,6 +19,7 @@ window.GM = (function () {
     return {
       ver: 3, money: keep.money || 0, runEarned: 0, stars: keep.stars || 0, medals: keep.medals || 0,
       site: keep.site || 0, cstars: 0, galons: keep.galons || 0, siteStars: keep.siteStars || [],
+      ng: keep.ng || 0, playT: keep.playT || 0, bestT: keep.bestT || 0, endSeen: !!keep.endSeen, // parties terminées, temps de jeu, fin du jeu
       n: { patrols: 1, cells: 1, inv: 1, pts: 1, acc: 1, pla: 1, clean: 1, masks: 0, snow: 0, interp: 0, press: 0 },
       up: Object.fromEntries(UPGRADES.map(u => [u.id, 0])), paid: {},
       built: { accueil: false, plaintes: false },
@@ -45,7 +46,7 @@ window.GM = (function () {
   const lv = id => G.up[id] || 0;
   const up = id => 1 + UPG[id].per * lv(id);            // bonus linéaire d'un équipement
   const down = id => Math.pow(1 - UPG[id].per, lv(id)); // réduction d'un équipement (multiplicative)
-  const valMult = () => Math.pow(1.6, G.tier) * up('lrp') * (1 + 0.5 * G.galons) * Math.pow(2, here().hard || 0)
+  const valMult = () => Math.pow(T.NG_MULT, G.ng || 0) * Math.pow(1.6, G.tier) * up('lrp') * (1 + 0.5 * G.galons) * Math.pow(2, here().hard || 0)
     * (buffOn('prefet') ? 3 : 1) * (buffOn('major') ? 3 : 1);
   const allSpeed = () => (buffOn('rush') ? 2 : 1) * (buffOn('turbo') ? 2 : 1) * (buffOn('pizza') ? 1.25 : 1) * (buffOn('laurine') ? 0.95 : 1);
   const ptsBuff = () => (buffOn('maxime') ? 1.5 : 1) * (buffOn('lrpmail') ? 1.5 : 1) * (buffOn('corbeaux') ? 0.9 : 1);
@@ -342,7 +343,7 @@ window.GM = (function () {
     }
     G._plaBusy = lb;
 
-    W.t += dt;
+    W.t += dt; G.playT = (G.playT || 0) + dt;
     if (W.t >= T.DAY_LEN * 7) endWeek();
     G.goldenIn -= dt;
     lostFlash = Math.max(0, lostFlash - dt);
@@ -366,7 +367,7 @@ window.GM = (function () {
     const quests = (G.quests || []).map(q => questInfo(q, w)).filter(Boolean);
     const bonus = quests.reduce((s, q) => s + (q.done ? q.reward : 0), 0);
     const dbl = quests.some(q => q.double);
-    const gained = (p.n + bonus) * (dbl ? 2 : 1);
+    const gained = (p.n + bonus) * (dbl ? 2 : 1) * starMult(); // chaque partie terminée multiplie les étoiles
     G.cstars += gained;
     const crit3 = here().star3.id === 'igpn' ? `IGPN : ${igpnLabel()}` : here().star3.label;
     G.pending = { no: w.no, ...p, quests, bonus, dbl, gained, gav: w.gav, sig: w.sig, pla: w.pla, lost: w.lost, inter: w.inter, recus: w.recus, partis: w.partis, earned: w.earned, objective: G.objective, levees: w.levees, malaises: w.malaises, clean: cleanRate(w), scandales: scandals(w), crit3 };
@@ -382,7 +383,7 @@ window.GM = (function () {
     ui.pv();
     if (G.quests.length) setTimeout(() => G.quests.forEach(q => { const i = questInfo(q); if (i) ui.toast(`Lundi : mission du préfet « ${i.name} » ! ${i.desc}${i.double ? '' : ` Récompense : +${i.reward} ★.`}`); }), 900);
     if (igpnHere()) setTimeout(() => ui.toast(`Lundi : cette semaine, l'IGPN vérifie : ${igpnLabel()}.`), 1300);
-    if (before < T.STARS_TO_MOVE && G.cstars >= T.STARS_TO_MOVE) setTimeout(() => ui.toast(`${T.STARS_TO_MOVE} étoiles ! Une mutation est possible : ouvrez la carte.`), 1700);
+    if (before < starsNeeded() && canMove() && G.site !== LAST) setTimeout(() => ui.toast(`${starsNeeded()} étoiles ! Une mutation est possible : ouvrez la carte.`), 1700);
   }
   function collect() {
     if (!G.pending) return 0;
@@ -410,8 +411,8 @@ window.GM = (function () {
     else if (g.id === 'igpn') {
       const r2 = sigRate(G.week);
       if (G.week.gav >= 5 && r2 >= 0.95) {
-        G.cstars += 1; msg += ` Signalisation à ${pc(r2)} : félicitations, +1 ★ !`;
-        if (G.cstars === T.STARS_TO_MOVE) msg += ` ${T.STARS_TO_MOVE} étoiles : une mutation est possible, ouvrez la carte.`;
+        G.cstars += starMult(); msg += ` Signalisation à ${pc(r2)} : félicitations, +${starMult()} ★ !`;
+        if (G.cstars === starsNeeded() && G.site !== LAST) msg += ` ${starsNeeded()} étoiles : une mutation est possible, ouvrez la carte.`;
       }
       else msg += G.week.gav < 5 ? ' Pas assez de GAV cette semaine pour juger. Rien à signaler.' : ` Signalisation à ${pc(r2)} : pas d'étoile cette fois (il faut 95 %).`;
     } else addBuff(g.id, g.dur, g.label, g.malus);
@@ -456,12 +457,18 @@ window.GM = (function () {
     if (nt.cost > G.money) return false;
     G.money -= nt.cost; G.tier++; return true;
   }
-  const canMove = () => G.cstars >= T.STARS_TO_MOVE;
+  // étoiles pour quitter un poste : 75 pour les 5 premiers, puis +25 par poste, 500 au plus
+  const starsNeeded = i => { i = i === undefined ? G.site : i; return Math.min(T.STARS_MAX, T.STARS_TO_MOVE + T.STARS_STEP * Math.max(0, i - 4)); };
+  const canMove = () => G.cstars >= starsNeeded();
+  const starMult = () => 1 + (G.ng || 0); // étoiles ×2 à la 2e partie, ×3 à la 3e…
+  // fin du jeu : les étoiles du ministère (10e poste) sont gagnées
+  const LAST = PD.SITES.length - 1;
+  const endReady = () => G.site === LAST && canMove() && !G.endSeen;
   function move() {
     if (!canMove()) return false;
     const ss = G.siteStars.slice(); ss[G.site] = G.cstars;
     collect(); // la prime de la dernière semaine compte dans le dossier, même si le PV n'a pas été fermé
-    reset(fresh({ stars: G.stars, medals: G.medals, galons: G.galons + 1, siteStars: ss, total: G.total, site: G.site + 1, money: 300 * (G.galons + 1) }));
+    reset(fresh({ stars: G.stars, medals: G.medals, galons: G.galons + 1, siteStars: ss, total: G.total, site: G.site + 1, money: 300 * (G.galons + 1), ng: G.ng, playT: G.playT, bestT: G.bestT, endSeen: G.endSeen || G.site === LAST }));
     if (igpnHere()) rollIgpn();
     return true;
   }
@@ -479,6 +486,13 @@ window.GM = (function () {
     const d = G.det[0], k = tamponPush();
     if (d) { d.e = Math.min(1, d.e + k); if (d.p > 0) d.p = Math.min(1, d.p + k); }
     return v;
+  }
+  // partie terminée : on recommence au premier poste, recettes ×4 de plus, meilleur temps gardé
+  function newGamePlus() {
+    const best = G.bestT ? Math.min(G.bestT, G.playT) : G.playT;
+    collect();
+    reset(fresh({ ng: (G.ng || 0) + 1, bestT: best, total: G.total }));
+    earnedLog = []; rateLong = 0; save();
   }
   // tout effacer : nouvelle partie au premier commissariat
   function newGame() { reset(fresh()); earnedLog = []; rateLong = 0; save(); }
@@ -515,7 +529,7 @@ window.GM = (function () {
   return {
     wasReset: () => wasReset, G, T, ui, here, has, step, collect, weekStars, primeCalc, sigRate, satRate, cleanRate, propre, gavLimit, scandals, igpnLabel, manifWhen,
     gavValue, plaValue, tamponValue, tamponPush, capacity, hallCap, cellCap, unitCost, upCost, bulk, unitOn, upOn, lv, up, down,
-    buyUnit, buyUp, sellUp, sellValue, build, upTier, canMove, move, tampon, rate, save, load, newGame, golden, weekCapacity,
+    buyUnit, buyUp, sellUp, sellValue, build, upTier, canMove, move, starsNeeded, starMult, endReady, newGamePlus, tampon, rate, save, load, newGame, golden, weekCapacity,
     enqTime, ptsTime, plaTime, invPerMin, ptsPerMin, patrolPerMin, citPerMin, accPerMin, plaPerMin, cleanPerMin, lawK, valMult,
     perf: () => perf, lost: () => lostFlash > 0, buffOn, manifRate, manifExtra, baseRate: () => rateLong, passiveRate,
     addBuff,

@@ -16,22 +16,24 @@ Vous êtes le commissaire divisionnaire Parpaing. Vous partez d'un petit poste d
   - une signalisation PTS d'au moins 95 % ;
   - le critère propre au commissariat.
 - Certains lundis, des **missions du préfet** rapportent des étoiles en plus. La « Semaine étoilée » double toutes les étoiles de la semaine.
-- À **75 étoiles**, la carte permet d'être muté au commissariat suivant. Chaque poste garde au plus 3 problèmes actifs :
+- Avec assez d'étoiles, la carte permet d'être muté au commissariat suivant : **75** pour les cinq premiers postes, puis 25 de plus à chaque poste. Chaque poste garde au plus 3 problèmes actifs :
 
-| # | Commissariat | Problème qui arrive |
-|---|---|---|
-| 1 | Saint-Glinglin-les-Choux (campagne) | aucun, on apprend le métier |
-| 2 | Bourg-en-Paperasse | vomi dans les couloirs → agents d'entretien |
-| 3 | Grand-Bouchon (métropole) | odeur de pieds → masques à gaz, sinon malaises à la PTS |
-| 4 | La Dalle-sur-Bourse (mégapole) | avocats et délai légal de 24 h |
-| 5 | Pontcassé-sous-Bois (banlieue) | manifestations par vagues |
-| 6 | Sainte-Crème-sur-Mer | touristes : trois fois plus de public |
-| 7 | Les Deux-Moufles | tempêtes qui bloquent les patrouilles → motoneiges |
-| 8 | Roissy-en-Retard (aéroport) | passagers étrangers → interprètes, et colis suspects |
-| 9 | Festival de Cannettes | GAV de stars, paparazzis et scandales → chargés de com' |
-| 10 | Place Beauvau (ministère) | réunionite et inspection de l'IGPN |
+| # | Commissariat | Problème qui arrive | Étoiles pour partir |
+|---|---|---|---|
+| 1 | Saint-Glinglin-les-Choux (campagne) | aucun, on apprend le métier | 75 |
+| 2 | Bourg-en-Paperasse | vomi dans les couloirs → agents d'entretien | 75 |
+| 3 | Grand-Bouchon (métropole) | odeur de pieds → masques à gaz, sinon malaises à la PTS | 75 |
+| 4 | La Dalle-sur-Bourse (mégapole) | avocats et délai légal de 24 h | 75 |
+| 5 | Pontcassé-sous-Bois (banlieue) | manifestations par vagues | 75 |
+| 6 | Sainte-Crème-sur-Mer | touristes : trois fois plus de public | 100 |
+| 7 | Les Deux-Moufles | tempêtes qui bloquent les patrouilles → motoneiges | 125 |
+| 8 | Roissy-en-Retard (aéroport) | passagers étrangers → interprètes, et colis suspects | 150 |
+| 9 | Festival de Cannettes | GAV de stars, paparazzis et scandales → chargés de com' | 175 |
+| 10 | Place Beauvau (ministère) | réunionite et inspection de l'IGPN | 200 |
 
-Au-delà, des secteurs sans fin tirent 3 ou 4 problèmes au hasard.
+- **Fin du jeu** : quand les étoiles du ministère sont gagnées, le jeu se met en pause et affiche le temps de jeu, à partager sur WhatsApp. Au choix :
+  - **recommencer** au premier poste avec toutes les recettes ×4, un multiplicateur qui se cumule à chaque partie terminée (×4, ×16, ×64…), et des étoiles qui comptent double à la 2e partie, triple à la 3e… ;
+  - ou **continuer** dans les secteurs sans fin, qui tirent 3 ou 4 problèmes au hasard et demandent 225 étoiles, puis 25 de plus à chaque secteur, jusqu'à 500.
 
 - Le bâtiment grandit par paliers : tour administrative, antenne, hélicoptère, annexe vitrée, statue dorée. La partie n'a pas de fin.
 - Pour ceux qui aiment cliquer, le **coup de tampon** rapporte 5 % de la recette par seconde (plus avec le tampon en titane). Tamponner vite remplit la jauge **Coup de bourre** : pleine, tout le commissariat va deux fois plus vite pendant 15 s.

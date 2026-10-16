@@ -16,7 +16,10 @@ window.PD = (function () {
     HALL: 4,
     PRIME_BASE: 0.25,
     OBJ_START: 8,
-    STARS_TO_MOVE: 75,      // étoiles à gagner dans un commissariat pour être muté (3 par semaine + missions)
+    STARS_TO_MOVE: 75,      // étoiles pour être muté des 5 premiers postes (3 par semaine + missions)…
+    STARS_STEP: 25,         // …puis 25 de plus à chaque poste à partir du 6e (100, 125… 200 au ministère)…
+    STARS_MAX: 500,         // …et ainsi de suite dans les secteurs, jusqu'à 500
+    NG_MULT: 4,             // chaque partie terminée multiplie toutes les recettes de la suivante par 4
     PISTE_BOOST: 1.5,       // patrouilles plus rapides tant qu'il reste des pistes
     TOURIST_MULT: 3,        // touristes : public ×3, plaintes plus rapides mais moins payées
     TOURIST_VALUE: 0.5,

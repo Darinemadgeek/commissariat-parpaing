@@ -45,7 +45,7 @@
         <dt class="opt">Recettes de la semaine</dt><dd class="opt">${eur(p.earned)}</dd>
         <dt><b>Prime</b></dt><dd><b>${eur(p.prime)}</b></dd>
       </dl>
-      <p class="comment">« ${talk} »${p.quota ? (ok ? '' : ' Signalisation PTS sous 70 % : pas de prime.') : ' Objectif de dossiers manqué : pas de prime.'} +${p.gained ?? p.n} étoile${(p.gained ?? p.n) > 1 ? 's' : ''} pour votre dossier de mutation (${Math.min(G.cstars, T.STARS_TO_MOVE)}/${T.STARS_TO_MOVE}).</p>
+      <p class="comment">« ${talk} »${p.quota ? (ok ? '' : ' Signalisation PTS sous 70 % : pas de prime.') : ' Objectif de dossiers manqué : pas de prime.'} +${p.gained ?? p.n} étoile${(p.gained ?? p.n) > 1 ? 's' : ''}${GM.starMult() > 1 ? ` (×${GM.starMult()}, partie n° ${G.ng + 1})` : ''} pour votre dossier de mutation (${Math.min(G.cstars, GM.starsNeeded())}/${GM.starsNeeded()}).</p>
       <button type="button" id="pvBtn">${ok ? 'Encaisser la prime' : 'Classer sans suite'}</button>
     </div>`;
     $('pvBtn').onclick = collect;
@@ -189,7 +189,7 @@
       sec('Carrière');
       mkCard(() => {
         const nx = site(G.site + 1), ok = GM.canMove();
-        return { icon: 'mutation', name: ok ? 'Mutation possible !' : 'Carte des affectations', desc: ok ? `Vous avez ${T.STARS_TO_MOVE} étoiles. Prochain poste : ${nx.name} (${nx.kind}).` : `Gagnez ${T.STARS_TO_MOVE} étoiles pour être muté à ${nx.name}. Chaque semaine rapporte jusqu'à 3 étoiles, plus les missions du préfet.`, owned: '★' + Math.min(G.cstars, T.STARS_TO_MOVE), cost: 'voir la carte', can: true, cls: ok ? 'danger' : '' };
+        return { icon: 'mutation', name: ok ? 'Mutation possible !' : 'Carte des affectations', desc: ok ? `Vous avez ${GM.starsNeeded()} étoiles. Prochain poste : ${nx.name} (${nx.kind}).` : `Gagnez ${GM.starsNeeded()} étoiles pour être muté à ${nx.name}. Chaque semaine rapporte jusqu'à 3 étoiles, plus les missions du préfet.`, owned: '★' + Math.min(G.cstars, GM.starsNeeded()), cost: 'voir la carte', can: true, cls: ok ? 'danger' : '' };
       }, () => openMap(), 'b:move');
     } else {
       // installation sur téléphone
@@ -214,7 +214,10 @@
         return `<h3>Dossier du commissaire Parpaing</h3><dl>
         <dt>Affectation</dt><dd>${h.name}</dd>
         <dt>Bâtiment</dt><dd>${tier(G.tier).name}</dd>
-        <dt>Étoiles (mutation)</dt><dd>★ ${G.cstars} / ${T.STARS_TO_MOVE}</dd>
+        <dt>Étoiles (mutation)</dt><dd>★ ${G.cstars} / ${GM.starsNeeded()}</dd>
+        <dt>Temps de jeu</dt><dd>${playTime(G.playT)}</dd>
+        ${G.ng ? `<dt>Parties terminées</dt><dd>${G.ng} (recettes ×${fmt(Math.pow(T.NG_MULT, G.ng))}, étoiles ×${GM.starMult()})</dd>` : ''}
+        ${G.bestT ? `<dt>Meilleur temps</dt><dd>${playTime(G.bestT)}</dd>` : ''}
         <dt>Galons</dt><dd>${G.galons} (+${G.galons * 50} % de recettes)</dd>
         <dt>Médailles</dt><dd>${G.medals}</dd>
         <dt>GAV bouclées</dt><dd>${fmt(G.total.gav)}</dd>
@@ -225,7 +228,7 @@
       }, true);
       const h = GM.here();
       if (h.problems.length) addEl('p', 'mini', '<b>Problèmes de ce commissariat.</b><br>' + h.problems.map(k => `<b>${PROBLEMS[k].name} :</b> ${PROBLEMS[k].desc}`).join('<br>'));
-      addEl('p', 'mini', () => `<b>Cycle d'une GAV.</b> Une patrouille ramène un suspect en cellule. Un enquêteur l'auditionne (${fmt(GM.enqTime(false), 1)} s) et, en même temps, un agent PTS le signalise (${fmt(GM.ptsTime(false), 1)} s). À la fin de l'audition, si sa signalisation a commencé, la GAV attend qu'elle se termine (${T.PTS_WAIT} s au plus) ; si aucun agent PTS n'a pu s'en occuper, elle sort non signalisée. Comme une signalisation est plus longue qu'une audition, il faut un peu plus d'agents PTS que d'enquêteurs, ou la borne biométrique.<br><br><b>Étoiles de la semaine.</b> 1 étoile si la jauge d'objectif est pleine, 1 si la signalisation atteint 95 %, 1 pour le critère local : ${(h.star3.id === 'igpn' ? 'IGPN : ' + GM.igpnLabel() : h.star3.label).toLowerCase()}. À ${T.STARS_TO_MOVE} étoiles, vous pouvez demander votre mutation sur la carte.<br><br><b>Missions du préfet.</b> Certains lundis, une ou deux missions apparaissent dans la carte de la semaine. Réussies dimanche soir, elles rapportent des étoiles en plus ; la « Semaine étoilée » double toutes les étoiles.<br><br><b>Prime.</b> Versée seulement si la jauge d'objectif est pleine : 25 % des recettes de la semaine, réduite si la PTS ne suit pas (rien sous 70 %) ou si des usagers repartent fâchés, +20 % par étoile.<br><br><b>Astuces.</b> Les plaintes donnent des pistes : les patrouilles vont 50 % plus vite tant qu'il en reste. Chaque coup de tampon rapporte une part de votre recette par seconde et fait avancer la GAV la plus ancienne. Tamponnez vite et sans vous arrêter : la jauge « Coup de bourre » se remplit et, pleine, fait tourner tout le commissariat deux fois plus vite pendant ${T.RUSH_LEN} s. Attrapez les croissants dorés (attention, certains sont des pièges).`, true);
+      addEl('p', 'mini', () => `<b>Cycle d'une GAV.</b> Une patrouille ramène un suspect en cellule. Un enquêteur l'auditionne (${fmt(GM.enqTime(false), 1)} s) et, en même temps, un agent PTS le signalise (${fmt(GM.ptsTime(false), 1)} s). À la fin de l'audition, si sa signalisation a commencé, la GAV attend qu'elle se termine (${T.PTS_WAIT} s au plus) ; si aucun agent PTS n'a pu s'en occuper, elle sort non signalisée. Comme une signalisation est plus longue qu'une audition, il faut un peu plus d'agents PTS que d'enquêteurs, ou la borne biométrique.<br><br><b>Étoiles de la semaine.</b> 1 étoile si la jauge d'objectif est pleine, 1 si la signalisation atteint 95 %, 1 pour le critère local : ${(h.star3.id === 'igpn' ? 'IGPN : ' + GM.igpnLabel() : h.star3.label).toLowerCase()}. À ${GM.starsNeeded()} étoiles, vous pouvez demander votre mutation sur la carte.<br><br><b>Missions du préfet.</b> Certains lundis, une ou deux missions apparaissent dans la carte de la semaine. Réussies dimanche soir, elles rapportent des étoiles en plus ; la « Semaine étoilée » double toutes les étoiles.<br><br><b>Prime.</b> Versée seulement si la jauge d'objectif est pleine : 25 % des recettes de la semaine, réduite si la PTS ne suit pas (rien sous 70 %) ou si des usagers repartent fâchés, +20 % par étoile.<br><br><b>Astuces.</b> Les plaintes donnent des pistes : les patrouilles vont 50 % plus vite tant qu'il en reste. Chaque coup de tampon rapporte une part de votre recette par seconde et fait avancer la GAV la plus ancienne. Tamponnez vite et sans vous arrêter : la jauge « Coup de bourre » se remplit et, pleine, fait tourner tout le commissariat deux fois plus vite pendant ${T.RUSH_LEN} s. Attrapez les croissants dorés (attention, certains sont des pièges).`, true);
       addRestart();
     }
     list.scrollTop = scroll;
@@ -325,7 +328,7 @@
         <circle r="30" fill="${done || here ? '#ffffff' : '#f4efe1'}" stroke="${ring}" stroke-width="${sel === idx ? 7 : 4}" class="ring"/>
         <g opacity="${done || here || next ? 1 : 0.45}" transform="scale(.9)">${ICON[s.biome]}</g>
         <text y="46" text-anchor="${anchor}" font-family="Rubik, sans-serif" font-weight="800" font-size="12.5" fill="#2a2833">${idx > cur + 1 ? 'Secteurs suivants' : idx < last ? (idx + 1) + '. ' + s.name : s.name.replace('Secteur spécial ', 'Secteur ')}</text>
-        <text y="61" text-anchor="${anchor}" font-family="Rubik, sans-serif" font-size="12" fill="#5a5560">${here ? (idx > last ? 'Ici · ★ ' : 'Vous êtes ici · ★ ') + Math.min(G.cstars, T.STARS_TO_MOVE) + '/' + T.STARS_TO_MOVE : done ? 'Terminé ★ ' + (G.siteStars[idx] || T.STARS_TO_MOVE) : next ? 'Prochaine mutation' : 'Verrouillé'}</text>
+        <text y="61" text-anchor="${anchor}" font-family="Rubik, sans-serif" font-size="12" fill="#5a5560">${here ? (idx > last ? 'Ici · ★ ' : 'Vous êtes ici · ★ ') + Math.min(G.cstars, GM.starsNeeded()) + '/' + GM.starsNeeded() : done ? 'Terminé ★ ' + (G.siteStars[idx] || GM.starsNeeded(idx)) : next ? 'Prochaine mutation' : 'Verrouillé'}</text>
       </g>`;
     }
     svg += '</svg>';
@@ -336,13 +339,14 @@
     if (sel === cur) btn = '<button class="go" disabled>Vous êtes ici</button>';
     else if (sel < cur) btn = '<button class="go" disabled>Mission accomplie</button>';
     else if (isNext && GM.canMove()) btn = `<button class="go ${armMove ? 'arm' : ''}" id="goMove">${armMove ? 'Confirmer : tout repart à zéro, sauf vos galons' : 'Demander ma mutation'}</button>`;
-    else if (isNext) btn = `<button class="go" disabled>Encore ${T.STARS_TO_MOVE - G.cstars} étoile${T.STARS_TO_MOVE - G.cstars > 1 ? 's' : ''} à gagner</button>`;
+    else if (isNext) { const left = GM.starsNeeded() - G.cstars; btn = `<button class="go" disabled>Encore ${left} étoile${left > 1 ? 's' : ''} à gagner</button>`; }
     else btn = '<button class="go" disabled>Verrouillé</button>';
     $('mapOv').innerHTML = `<div class="mapcard">
       <header><h2>Carte des affectations</h2><button type="button" id="mapClose">Fermer</button></header>
       ${svg}
       <div class="mapinfo"><h3>${s.name}</h3><div class="kind">${s.kind}</div><p style="margin:0 0 6px">${s.pitch}</p>${probs}
-        <p style="margin:8px 0 0"><b>3e étoile :</b> ${s.star3.id === 'igpn' ? "inspection de l'IGPN (un critère tiré au sort chaque lundi)" : s.star3.label}</p>
+        <p style="margin:8px 0 0"><b>Pour en partir :</b> ${GM.starsNeeded(sel)} étoiles</p>
+        <p style="margin:4px 0 0"><b>3e étoile :</b> ${s.star3.id === 'igpn' ? "inspection de l'IGPN (un critère tiré au sort chaque lundi)" : s.star3.label}</p>
         ${isNext ? `<p style="margin:6px 0 0">Bonus de mutation : +1 galon (+50 % de recettes pour toujours), ${eur(300 * (G.galons + 1))} de départ.</p>` : ''}
         ${btn}</div></div>`;
     $('mapClose').onclick = closeMap;
@@ -398,6 +402,40 @@
       <button type="button" class="go" id="topoGo">C'est reparti !</button></div>`;
     ov.hidden = false;
     const go = $('topoGo'); go.onclick = () => { ov.hidden = true; setTimeout(showTopo, 200); }; go.focus({ preventScroll: true });
+  }
+  // ---------- fin du jeu : les étoiles du ministère sont gagnées ----------
+  const GAME_URL = 'https://darinemadgeek.github.io/commissariat-parpaing/';
+  function playTime(s) { s = Math.max(0, s || 0); const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60); return h ? `${h} h ${String(m).padStart(2, '0')}` : `${m} min`; }
+  let endOpen = false; // le jeu est en pause tant que le popup est ouvert
+  function showEnd() {
+    endOpen = true; closeMap(); $('pvSlot').innerHTML = ''; pvAuto = 0;
+    const t = playTime(G.playT), next = Math.pow(T.NG_MULT, (G.ng || 0) + 1), ov = $('topoOv');
+    const share = `J'ai fini Commissaire Parpaing en ${t} de jeu ! 🚓 Feras-tu mieux ? ${GAME_URL}`;
+    ov.innerHTML = `<div class="topo endgame" role="document">
+      <p class="topo-k">Place Beauvau · fin de carrière</p>
+      <h2>🏆 Vous avez fini le jeu en ${t} de jeu !</h2>
+      ${G.bestT ? `<p>Votre meilleur temps : ${playTime(Math.min(G.bestT, G.playT))}.</p>` : ''}
+      <p>Partagez votre exploit sur WhatsApp et défiez vos meilleurs collègues !</p>
+      <a class="go wa" id="endShare" href="https://wa.me/?text=${encodeURIComponent(share)}" target="_blank" rel="noopener">Partager sur WhatsApp</a>
+      <h3>Et maintenant ?</h3>
+      <p><b>Retentez l'aventure</b> avec un multiplicateur de gain : <b>toutes les recettes ×${fmt(next)}</b> dès le début, et <b>${GM.starMult() + 1} fois plus d'étoiles</b> chaque semaine pour aller plus vite ! Tout repart à zéro au premier poste, et les bonus grandissent à chaque partie terminée.</p>
+      <p><b>Ou continuez votre carrière</b> : vous avez déverrouillé les <b>secteurs sans fin</b>. Des problèmes tirés au sort, toujours plus durs et mieux payés, et ${GM.starsNeeded(G.site + 1)} étoiles pour le premier secteur (${T.STARS_STEP} de plus à chaque secteur, jusqu'à ${T.STARS_MAX}).</p>
+      <button type="button" class="go" id="endAgain">Recommencer ×${fmt(next)}</button>
+      <button type="button" class="go alt" id="endGo">Continuer vers les secteurs sans fin</button></div>`;
+    ov.hidden = false;
+    const close = () => { ov.hidden = true; endOpen = false; };
+    $('endAgain').onclick = () => {
+      close(); GM.newGamePlus();
+      S.setSite(GM.here()); radio(); shape = ''; render();
+      toast(`Nouvelle partie : toutes les recettes ×${fmt(Math.pow(T.NG_MULT, G.ng))} et les étoiles ×${GM.starMult()} ! Bienvenue à ${GM.here().name}.`);
+      setTimeout(showTopo, 300);
+    };
+    $('endGo').onclick = () => {
+      G.bestT = G.bestT ? Math.min(G.bestT, G.playT) : G.playT;
+      close();
+      if (GM.move()) { S.setSite(GM.here()); radio(); toast(`Bienvenue à ${GM.here().name} ! Les secteurs sans fin commencent.`); render(); showTopo(); }
+    };
+    $('endAgain').focus({ preventScroll: true });
   }
   const topoSeen = () => { try { return localStorage.getItem(TOPO_KEY) === String(G.site); } catch (e) { return true; } };
 
@@ -530,7 +568,7 @@
       return `<div class="quest ${x.done && !x.double ? 'done' : ''}" data-tip="q${i}" tabindex="0"><span>Mission : ${x.name} ${x.double ? '(étoiles ×2)' : `(+${x.reward} ★)`}</span><b>${x.double ? 'active' : (x.done ? '✔ ' : '') + x.txt}</b></div>`;
     }).join(''));
     Tips.refresh();
-    $('cStars').textContent = `★ ${Math.min(G.cstars, T.STARS_TO_MOVE)}/${T.STARS_TO_MOVE}`;
+    $('cStars').textContent = `★ ${Math.min(G.cstars, GM.starsNeeded())}/${GM.starsNeeded()}`;
     $('mapBtn').classList.toggle('ready', GM.canMove());
     $('tierName').textContent = `${tier(G.tier).name} · ${h.name}`;
     $('buffs').innerHTML = G.buffs.map(b => `<span class="buff${b.malus ? ' malus' : ''}">${b.label} · ${Math.ceil(b.until - GM.perf())} s</span>`).join('');
@@ -628,7 +666,7 @@
   const fxQ = [];
   function radio() { const b = PD.RADIO_BY[GM.here().biome] || []; $('radio').textContent = pick(Math.random() < 0.5 && b.length ? b : PD.RADIO); }
   function frame(now) {
-    if (!playing) { last = now; S.sync(view()); requestAnimationFrame(frame); return; } // le jeu attend le bouton JOUER
+    if (!playing || endOpen) { last = now; S.sync(view()); requestAnimationFrame(frame); return; } // le jeu attend le bouton JOUER (ou la fin du jeu)
     const real = Math.max(0, (now - last) / 1000);
     last = now;
     const dt = Math.min(real, 300);
@@ -648,6 +686,7 @@
       if (golden.t > 18) killGolden();
     }
     if (pvAuto > 0 && (pvAuto -= Math.min(dt, 1)) <= 0) collect();
+    if (GM.endReady()) showEnd();
     S.sync(view());
     tickMoney(Math.min(dt, 0.1));
     if ((uiT += Math.min(dt, 1)) > 0.2) { uiT = 0; hud(); render(); }
@@ -660,7 +699,7 @@
   let playing = false, welcome = null;
   function showTitle(had) {
     $('titleSave').textContent = had
-      ? `Partie en cours · ${GM.here().name} · ${moneyFmt(G.money)} · ★ ${Math.min(G.cstars, T.STARS_TO_MOVE)}/${T.STARS_TO_MOVE}`
+      ? `Partie en cours · ${GM.here().name} · ${moneyFmt(G.money)} · ★ ${Math.min(G.cstars, GM.starsNeeded())}/${GM.starsNeeded()}${G.ng ? ` · recettes ×${fmt(Math.pow(T.NG_MULT, G.ng))}` : ''}`
       : GM.wasReset() ? 'Nouvelle version : votre partie repart à zéro' : 'Nouvelle partie · sauvegarde automatique dans ce navigateur';
     $('playBtn').onclick = play;
     try { $('playBtn').focus({ preventScroll: true }); } catch (e) { /* ancien navigateur */ }
@@ -671,7 +710,8 @@
     $('title').classList.add('out');
     setTimeout(() => { $('title').hidden = true; }, 450);
     if (welcome) setTimeout(() => toast(welcome), 500);
-    if (GM.wasReset() && !resetSaid) setTimeout(showSorry, 500);
+    if (GM.endReady()) setTimeout(showEnd, 500);
+    else if (GM.wasReset() && !resetSaid) setTimeout(showSorry, 500);
     else if (G.pending) showPV();
     else if (!topoSeen()) setTimeout(showTopo, 500);
   }
